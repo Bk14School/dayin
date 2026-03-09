@@ -2590,6 +2590,16 @@ async function calSaveDay() {
   hideProgress();
 }
 
+  function openPrint(html) {
+  const w = window.open('','_blank');
+  if (!w) { 
+    showToast('กรุณาอนุญาต Popup ในเบราว์เซอร์ก่อนทำการพิมพ์','error'); 
+    return; 
+  }
+  w.document.write(html);
+  w.document.close();
+}
+
 function printWarningLetter(studentId) {
   const student = calStudents.find(s => s.studentId === studentId);
   if (!student) return;
