@@ -185,6 +185,17 @@ body { font-family: 'Prompt', sans-serif; background: var(--bg); color: var(--te
 .cal-stu-name { flex:1;font-size:.9rem; }
 .cal-stu-num { width:28px;text-align:center;font-size:.8rem;color:#9ca3af;flex-shrink:0; }
 
+/* Holiday cells */
+.cal-cell.holiday { background:#f1f5f9;border-color:#cbd5e1;cursor:default; }
+.cal-cell.holiday:hover { transform:none;box-shadow:none;border-color:#cbd5e1; }
+.cal-cell.makeup  { background:#eff6ff;border-color:#93c5fd; }
+.cal-badge { display:inline-block;font-size:.65rem;padding:1px 6px;border-radius:10px;font-weight:700;margin-top:3px; }
+.cal-badge.holiday { background:#e2e8f0;color:#64748b; }
+.cal-badge.makeup  { background:#dbeafe;color:#1d4ed8; }
+.cal-cell .cal-holiday-btn { opacity:0;position:absolute;top:4px;right:4px;background:none;border:none;cursor:pointer;font-size:.85rem;line-height:1;padding:2px;border-radius:4px;transition:opacity .15s; }
+.cal-cell:hover .cal-holiday-btn { opacity:1; }
+.cal-cell { position:relative; }
+
 /* Month filter buttons */
 .month-btn { padding: 6px 14px; border-radius: 20px; border: 1.5px solid #cbd5e1; background: #fff; color: #374151; font-size: .82rem; font-weight: 600; cursor: pointer; transition: all .15s; font-family: inherit; }
 .month-btn:hover  { border-color: #0ea5e9; color: #0ea5e9; }
@@ -455,6 +466,36 @@ body { font-family: 'Prompt', sans-serif; background: var(--bg); color: var(--te
 
       <!-- Calendar Grid -->
       <div id="calGrid" class="cal-grid"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Holiday Modal -->
+<div class="modal fade" id="calHolidayModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered" style="max-width:400px;">
+    <div class="modal-content" style="border-radius:16px;overflow:hidden;">
+      <div class="modal-header border-0 pb-0">
+        <h5 class="modal-title" style="font-weight:700;">📅 <span id="calHolidayDateLabel"></span></h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body pt-2">
+        <p style="color:#6b7280;font-size:.9rem;">เลือกประเภทวัน:</p>
+        <div class="d-flex flex-column gap-2">
+          <button class="holiday-type-btn" onclick="calMarkHoliday('holiday')" style="background:#f1f5f9;border:2px solid #cbd5e1;border-radius:12px;padding:12px 16px;text-align:left;cursor:pointer;font-family:inherit;font-size:.95rem;">
+            🚫 <b>วันหยุดพิเศษ</b><br><span style="font-size:.8rem;color:#64748b;">ไม่มีการเรียนการสอน ไม่นับ % มาเรียน</span>
+          </button>
+          <button class="holiday-type-btn" onclick="calMarkHoliday('makeup')" style="background:#eff6ff;border:2px solid #93c5fd;border-radius:12px;padding:12px 16px;text-align:left;cursor:pointer;font-family:inherit;font-size:.95rem;">
+            📚 <b>วันเรียนชดเชย</b><br><span style="font-size:.8rem;color:#1d4ed8;">เปิดให้เช็คชื่อได้ (แม้เป็นเสาร์/อาทิตย์)</span>
+          </button>
+          <button class="holiday-type-btn" id="calRemoveHolidayBtn" onclick="calRemoveHoliday()" style="background:#fff5f5;border:2px solid #fca5a5;border-radius:12px;padding:12px 16px;text-align:left;cursor:pointer;font-family:inherit;font-size:.95rem;display:none;">
+            ↩️ <b>กลับเป็นวันเรียนปกติ</b>
+          </button>
+        </div>
+        <div class="mt-3">
+          <label style="font-size:.85rem;color:#374151;">หมายเหตุ (ไม่บังคับ)</label>
+          <input type="text" id="calHolidayNote" placeholder="เช่น วันสงกรานต์, เรียนชดเชยวันจันทร์" class="form-control mt-1" style="font-family:inherit;">
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -1495,13 +1536,15 @@ function openPrint(html) {
 // Calendar Page
 // =============================================
 let calYear  = 0;
-let calMonth = 0;   // 1-12 (พ.ศ.)
-let calAllData   = null;  // ข้อมูลทั้งเทอมจาก getReport
+let calMonth = 0;
 let calStudents  = [];
 let calDayData   = {};    // date-string → {studentId→status}
-let calEditDate  = '';    // วันที่ที่เปิด modal
-let calEditAtt   = {};    // สำเนาสถานะสำหรับแก้ไข
+let calHolidays  = {};    // date-string → {type,note,markedBy}
+let calEditDate  = '';
+let calEditAtt   = {};
 let calModalInst = null;
+let calHolModalInst = null;
+let calHolEditDate  = '';
 
 const THAI_MONTHS_CAL = ['','มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน',
                           'กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
@@ -1545,11 +1588,14 @@ async function loadCalendarData() {
   const mm  = String(calMonth).padStart(2,'0');
   showProgress('กำลังโหลดปฏิทิน...');
   try {
-    // โหลดข้อมูลเดือนนี้
-    const raw = await api('getReport', { year: currentYear, classroom: cls, month: mm });
+    // โหลดข้อมูลเช็คชื่อ + วันหยุดพร้อมกัน
+    const [raw, holidays] = await Promise.all([
+      api('getReport',   { year: currentYear, classroom: cls, month: mm }),
+      api('getHolidays', { term: currentYear })
+    ]);
     calStudents = raw.students || [];
 
-    // สร้าง calDayData: date → {studentId→status}
+    // สร้าง calDayData
     calDayData = {};
     raw.dates.forEach(d => {
       calDayData[d] = {};
@@ -1558,6 +1604,10 @@ async function loadCalendarData() {
         if (v) calDayData[d][s.studentId] = v;
       });
     });
+
+    // สร้าง calHolidays: date → {type,note,markedBy}
+    calHolidays = {};
+    (holidays||[]).forEach(h => { calHolidays[h.date] = h; });
 
     renderCalendar();
   } catch(e) {
@@ -1603,40 +1653,109 @@ function renderCalendar() {
       });
     }
 
+    // ตรวจสอบวันหยุด
+    const holInfo   = calHolidays[dateStr] || null;
+    const isHoliday = holInfo && holInfo.type === 'holiday';
+    const isMakeup  = holInfo && holInfo.type === 'makeup';
+
     // สร้าง dots
     let dotsHtml = '';
-    if (hasData) {
+    if (hasData && !isHoliday) {
       if(cntM)  dotsHtml += `<div class="cal-dot-sm" style="background:#22c55e;" title="มา ${cntM}"></div>`.repeat(Math.min(cntM,5));
       if(cntK)  dotsHtml += `<div class="cal-dot-sm" style="background:#ef4444;" title="ขาด ${cntK}"></div>`.repeat(Math.min(cntK,5));
       if(cntL)  dotsHtml += `<div class="cal-dot-sm" style="background:#f59e0b;" title="ลา ${cntL}"></div>`.repeat(Math.min(cntL,5));
       if(cntS)  dotsHtml += `<div class="cal-dot-sm" style="background:#818cf8;" title="สาย ${cntS}"></div>`.repeat(Math.min(cntS,5));
     }
 
-    // summary text
-    let summaryHtml = '';
-    if (hasData) {
+    // content ในเซลล์
+    let cellContent = '';
+    if (isHoliday) {
+      cellContent = `<div class="cal-badge holiday">🚫 หยุด</div>${holInfo.note?`<div class="cal-summary">${holInfo.note}</div>`:''}`;
+    } else if (isMakeup) {
+      cellContent = `<div class="cal-badge makeup">📚 ชดเชย</div>${holInfo.note?`<div class="cal-summary">${holInfo.note}</div>`:''}`;
+      if (hasData) cellContent += `<div class="cal-dots">${dotsHtml}</div>`;
+    } else if (hasData) {
       const parts = [];
       if(cntM) parts.push(`<span style="color:#16a34a;">ม${cntM}</span>`);
       if(cntK) parts.push(`<span style="color:#dc2626;">ข${cntK}</span>`);
       if(cntL) parts.push(`<span style="color:#d97706;">ล${cntL}</span>`);
       if(cntS) parts.push(`<span style="color:#6366f1;">ส${cntS}</span>`);
       if(cntNone) parts.push(`<span style="color:#94a3b8;">?${cntNone}</span>`);
-      summaryHtml = `<div class="cal-summary">${parts.join(' ')}</div>`;
-    } else if (!isFuture) {
-      summaryHtml = `<div class="cal-no-data">ยังไม่เช็ค</div>`;
+      cellContent = `<div class="cal-dots">${dotsHtml}</div><div class="cal-summary">${parts.join(' ')}</div>`;
+    } else {
+      cellContent = `<div class="cal-no-data">ยังไม่เช็ค</div>`;
     }
 
-    const clickable = !isFuture ? `onclick="openCalDay('${dateStr}')"` : '';
-    const cellClass = ['cal-cell', isToday?'today':'', isWeekend?'weekend':'', hasData?'has-data':''].filter(Boolean).join(' ');
+    // ปุ่มมาร์ควันหยุด (ทุกคนทำได้)
+    const holBtn = `<button class="cal-holiday-btn" onclick="event.stopPropagation();openHolidayModal('${dateStr}')" title="ตั้งค่าวันหยุด/ชดเชย">⚙️</button>`;
+
+    // คลิกเปิดเช็คชื่อ (ยกเว้นวันหยุด)
+    const clickable = isHoliday ? '' : `onclick="openCalDay('${dateStr}')"`;
+    const cellClass = ['cal-cell',
+      isToday?'today':'', isWeekend&&!isMakeup?'weekend':'',
+      hasData&&!isHoliday?'has-data':'',
+      isHoliday?'holiday':'', isMakeup?'makeup':''
+    ].filter(Boolean).join(' ');
 
     html += `<div class="${cellClass}" ${clickable}>
+      ${holBtn}
       <div class="cal-date ${isToday?'today-num':''}">${d}${isToday?' <span style="font-size:.6rem;color:#0ea5e9;">วันนี้</span>':''}</div>
-      <div class="cal-dots">${dotsHtml}</div>
-      ${summaryHtml}
+      ${cellContent}
     </div>`;
   }
 
   document.getElementById('calGrid').innerHTML = html;
+}
+
+// ==========================================
+// Holiday Modal
+// ==========================================
+function openHolidayModal(dateStr) {
+  calHolEditDate = dateStr;
+  const p = dateStr.split('/');
+  const dow = new Date(parseInt(p[2])-543, parseInt(p[1])-1, parseInt(p[0])).getDay();
+  const dowNames = ['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัสบดี','ศุกร์','เสาร์'];
+  document.getElementById('calHolidayDateLabel').textContent =
+    `วัน${dowNames[dow]}ที่ ${parseInt(p[0])} ${THAI_MONTHS_CAL[parseInt(p[1])]} ${p[2]}`;
+
+  const existing = calHolidays[dateStr];
+  document.getElementById('calHolidayNote').value = existing ? existing.note : '';
+  document.getElementById('calRemoveHolidayBtn').style.display = existing ? 'block' : 'none';
+
+  calHolModalInst = new bootstrap.Modal(document.getElementById('calHolidayModal'));
+  calHolModalInst.show();
+}
+
+async function calMarkHoliday(type) {
+  const note = document.getElementById('calHolidayNote').value.trim();
+  showProgress('กำลังบันทึก...');
+  try {
+    await api('setHoliday', {
+      term: currentYear, date: calHolEditDate,
+      type, note, markedBy: currentUser.name
+    });
+    calHolidays[calHolEditDate] = { type, note, markedBy: currentUser.name };
+    calHolModalInst?.hide();
+    renderCalendar();
+    showToast(type==='holiday'?'มาร์ควันหยุดแล้ว 🚫':'มาร์ควันชดเชยแล้ว 📚','success');
+  } catch(e) {
+    showToast('บันทึกไม่สำเร็จ: '+e.message,'error');
+  }
+  hideProgress();
+}
+
+async function calRemoveHoliday() {
+  showProgress('กำลังลบ...');
+  try {
+    await api('removeHoliday', { term: currentYear, date: calHolEditDate });
+    delete calHolidays[calHolEditDate];
+    calHolModalInst?.hide();
+    renderCalendar();
+    showToast('กลับเป็นวันเรียนปกติแล้ว ✅','success');
+  } catch(e) {
+    showToast('ลบไม่สำเร็จ: '+e.message,'error');
+  }
+  hideProgress();
 }
 
 // เปิด modal วันที่เลือก
