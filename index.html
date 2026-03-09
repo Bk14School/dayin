@@ -1109,14 +1109,112 @@ function exportReportExcel() {
 // =============================================
 // Print PDF
 // =============================================
+// =============================================
+// Print Report — แนวนอน A4
+// รายเดือน: แสดงทุกวัน (landscape พอดี ≤31 คอลัมน์)
+// รายเทอม:  สรุปเป็นยอดรวมรายเดือน (compact landscape)
+// =============================================
 function printReport() {
   if (!reportData||!reportData.students.length){showToast('ไม่มีข้อมูล','error');return;}
   const {students,dates,attendance} = reportData;
-  const cls = document.getElementById('rptClassroom').value;
-  const school = document.getElementById('loginSchoolName')?.textContent || 'โรงเรียนบ้านคลอง 14';
+  const cls      = document.getElementById('rptClassroom').value;
+  const period   = document.getElementById('rptPeriod').value;
+  const school   = document.getElementById('loginSchoolName')?.textContent || 'โรงเรียนบ้านคลอง 14';
+  const threshold= parseInt(document.getElementById('rptThreshold').value)||3;
 
-  const threshold = parseInt(document.getElementById('rptThreshold').value)||3;
+  const THAI_MONTHS = ['','ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+
+  // ---- helper: นับสถิติต่อคน ----
+  function countStats(sid) {
+    const att = attendance[sid]||{};
+    let p=0,a=0,l=0,la=0;
+    dates.forEach(d=>{const v=att[d]||'-';if(v==='ม')p++;else if(v==='ข')a++;else if(v==='ล')l++;else if(v==='ส')la++;});
+    return {p,a,l,la};
+  }
+
+  // ---- helper: สีสถานะ ----
+  function statusBg(v){return v==='ม'?'#d1fae5':v==='ข'?'#fee2e2':v==='ล'?'#fef3c7':v==='ส'?'#e0e7ff':'#f8fafc';}
+  function statusFg(v){return v==='ม'?'#065f46':v==='ข'?'#991b1b':v==='ล'?'#92400e':v==='ส'?'#3730a3':'#9ca3af';}
+
+  const printDate = new Date().toLocaleDateString('th-TH',{year:'numeric',month:'long',day:'numeric'});
+
+  // ======================================================
+  // โหมด รายเทอม — สรุปรายเดือน (compact)
+  // ======================================================
+  if (period === 'term') {
+    // จัดกลุ่มวันที่ตามเดือน
+    const monthMap = {}; // "mm/yyyy" → [dates]
+    dates.forEach(d => {
+      const p = d.split('/');
+      const key = p[1]+'/'+p[2];
+      if(!monthMap[key]) monthMap[key]=[];
+      monthMap[key].push(d);
+    });
+    const monthKeys = Object.keys(monthMap).sort((a,b)=>{
+      const [ma,ya]=a.split('/'); const [mb,yb]=b.split('/');
+      return (parseInt(ya)*100+parseInt(ma))-(parseInt(yb)*100+parseInt(mb));
+    });
+
+    let grandP=0,grandA=0,grandL=0,grandLa=0;
+
+    const headerCols = monthKeys.map(mk=>{
+      const [mm]=mk.split('/');
+      return `<th colspan="4" style="background:#0ea5e9;color:#fff;text-align:center;font-size:10px;padding:4px 2px;">${THAI_MONTHS[parseInt(mm)]}</th>`;
+    }).join('') + '<th colspan="4" style="background:#1e3a5f;color:#fff;">รวมทั้งเทอม</th><th style="background:#374151;color:#fff;">%มา</th>';
+
+    const subHeader = monthKeys.map(()=>
+      '<th style="background:#e0f2fe;color:#0369a1;font-size:9px;padding:2px;">มา</th><th style="background:#fee2e2;color:#991b1b;font-size:9px;padding:2px;">ขาด</th><th style="background:#fef3c7;color:#92400e;font-size:9px;padding:2px;">ลา</th><th style="background:#e0e7ff;color:#3730a3;font-size:9px;padding:2px;">สาย</th>'
+    ).join('') + '<th style="background:#d1fae5;color:#065f46;font-size:9px;">มา</th><th style="background:#fee2e2;color:#991b1b;font-size:9px;">ขาด</th><th style="background:#fef3c7;color:#92400e;font-size:9px;">ลา</th><th style="background:#e0e7ff;color:#3730a3;font-size:9px;">สาย</th><th></th>';
+
+    const bodyRows = students.map((s,i)=>{
+      const att = attendance[s.studentId]||{};
+      let tp=0,ta=0,tl=0,tla=0;
+      const cells = monthKeys.map(mk=>{
+        const mDates = monthMap[mk];
+        let p=0,a=0,l=0,la=0;
+        mDates.forEach(d=>{const v=att[d]||'-';if(v==='ม')p++;else if(v==='ข')a++;else if(v==='ล')l++;else if(v==='ส')la++;});
+        tp+=p;ta+=a;tl+=l;tla+=la;
+        return `<td style="text-align:center;font-size:10px;color:#065f46;">${p||'-'}</td>
+                <td style="text-align:center;font-size:10px;color:${a?'#991b1b':'#9ca3af'};">${a||'-'}</td>
+                <td style="text-align:center;font-size:10px;color:${l?'#92400e':'#9ca3af'};">${l||'-'}</td>
+                <td style="text-align:center;font-size:10px;color:${la?'#3730a3':'#9ca3af'};">${la||'-'}</td>`;
+      }).join('');
+      grandP+=tp;grandA+=ta;grandL+=tl;grandLa+=tla;
+      const totalDays=tp+ta+tl+tla;
+      const pct=totalDays?Math.round(tp/totalDays*100):0;
+      const rowBg=ta>=threshold?'#fff5f5':'';
+      return `<tr style="background:${rowBg};">
+        <td style="text-align:center;color:#9ca3af;font-size:10px;">${i+1}</td>
+        <td style="font-size:11px;white-space:nowrap;">${s.name}${ta>=threshold?' ⚠️':''}</td>
+        ${cells}
+        <td style="text-align:center;font-weight:700;font-size:10px;color:#065f46;">${tp}</td>
+        <td style="text-align:center;font-weight:700;font-size:10px;color:#991b1b;">${ta}</td>
+        <td style="text-align:center;font-weight:700;font-size:10px;color:#92400e;">${tl}</td>
+        <td style="text-align:center;font-weight:700;font-size:10px;color:#3730a3;">${tla}</td>
+        <td style="text-align:center;font-weight:700;font-size:11px;color:${pct<80?'#991b1b':'#065f46'};">${pct}%</td>
+      </tr>`;
+    }).join('');
+
+    const html = buildPrintPage({
+      school, cls, currentYear, printDate, threshold,
+      title: `สรุปการเข้าเรียน รายเทอม`,
+      subTitle: `ปีการศึกษา ${currentYear} | ชั้น ${cls}`,
+      orientation: 'landscape',
+      tableHead: `<tr><th style="width:24px;">#</th><th style="min-width:130px;">ชื่อ-นามสกุล</th>${headerCols}</tr>
+                  <tr><th></th><th></th>${subHeader}</tr>`,
+      tableBody: bodyRows,
+      summary: `นักเรียน <b>${students.length}</b> คน &nbsp;|&nbsp; รวมมา <b>${grandP}</b> &nbsp; ขาด <b>${grandA}</b> &nbsp; ลา <b>${grandL}</b> &nbsp; สาย <b>${grandLa}</b>`,
+      alertNote: ''
+    });
+    openPrint(html);
+    return;
+  }
+
+  // ======================================================
+  // โหมด รายเดือน / รายสัปดาห์ — แสดงทุกวัน
+  // ======================================================
   let totalP=0,totalA=0,totalL=0,totalLa=0;
+  const alerts=[];
 
   const bodyRows = students.map((s,i)=>{
     const att=attendance[s.studentId]||{};
@@ -1124,70 +1222,122 @@ function printReport() {
     const cells=dates.map(d=>{
       const v=att[d]||'-';
       if(v==='ม')p++;else if(v==='ข')a++;else if(v==='ล')l++;else if(v==='ส')la++;
-      const bg=v==='ม'?'#d1fae5':v==='ข'?'#fee2e2':v==='ล'?'#fef3c7':v==='ส'?'#e0e7ff':'#f3f4f6';
-      return `<td style="background:${bg};text-align:center;font-size:10px;">${v}</td>`;
+      return `<td style="background:${statusBg(v)};color:${statusFg(v)};text-align:center;font-weight:600;font-size:9px;padding:2px 1px;">${v}</td>`;
     }).join('');
     totalP+=p;totalA+=a;totalL+=l;totalLa+=la;
+    if(a>=threshold) alerts.push(s.name);
     const pct=dates.length?Math.round(p/dates.length*100):0;
-    const rowBg=a>=threshold?'background:#fff5f5;':'';
-    return `<tr style="${rowBg}">
-      <td style="text-align:center;">${i+1}</td>
-      <td>${s.name}${a>=threshold?' ⚠️':''}</td>
+    return `<tr style="background:${a>=threshold?'#fff5f5':''};">
+      <td style="text-align:center;color:#9ca3af;font-size:10px;">${i+1}</td>
+      <td style="font-size:11px;">${s.name}${a>=threshold?' ⚠️':''}</td>
       ${cells}
-      <td style="text-align:center;font-weight:bold;color:#065f46;">${p}</td>
-      <td style="text-align:center;font-weight:bold;color:#991b1b;">${a}</td>
-      <td style="text-align:center;font-weight:bold;color:#92400e;">${l}</td>
-      <td style="text-align:center;font-weight:bold;color:#3730a3;">${la}</td>
-      <td style="text-align:center;font-weight:bold;color:${pct<80?'#991b1b':'#065f46'};">${pct}%</td>
+      <td style="text-align:center;font-weight:700;font-size:10px;color:#065f46;">${p}</td>
+      <td style="text-align:center;font-weight:700;font-size:10px;color:#991b1b;">${a}</td>
+      <td style="text-align:center;font-weight:700;font-size:10px;color:#92400e;">${l}</td>
+      <td style="text-align:center;font-weight:700;font-size:10px;color:#3730a3;">${la}</td>
+      <td style="text-align:center;font-weight:700;font-size:11px;color:${pct<80?'#991b1b':'#065f46'};">${pct}%</td>
     </tr>`;
   }).join('');
 
-  const dateHeaders = dates.map(d=>`<th style="min-width:32px;font-size:9px;text-align:center;background:#0ea5e9;color:white;">${d.substring(0,5)}</th>`).join('');
+  // แยกวันที่เป็นกลุ่มเดือนสำหรับ header 2 ชั้น
+  const monthGroups={};
+  dates.forEach(d=>{const p=d.split('/');const mk=p[1]+'/'+p[2];if(!monthGroups[mk])monthGroups[mk]=[];monthGroups[mk].push(d);});
+  const monthHeaderRow = Object.entries(monthGroups).map(([mk,ds])=>{
+    const mm=mk.split('/')[0];
+    return `<th colspan="${ds.length}" style="background:#1e3a5f;color:#fff;text-align:center;font-size:9px;padding:3px;">${THAI_MONTHS[parseInt(mm)]}</th>`;
+  }).join('');
+  const dayHeaderRow = dates.map(d=>`<th style="background:#0ea5e9;color:#fff;font-size:8px;padding:2px 1px;min-width:16px;width:16px;">${d.substring(0,2)}</th>`).join('');
 
-  const html = `<!DOCTYPE html><html><head><meta charset="utf-8">
-  <title>รายงาน ${cls} ${currentYear}</title>
+  const html = buildPrintPage({
+    school, cls, currentYear, printDate, threshold,
+    title: `สรุปการเข้าเรียน ${period==='week'?'รายสัปดาห์':'รายเดือน'}`,
+    subTitle: `ปีการศึกษา ${currentYear} | ชั้น ${cls} | ${dates.length} วันเรียน`,
+    orientation: 'landscape',
+    tableHead: `<tr>
+      <th rowspan="2" style="width:24px;">#</th>
+      <th rowspan="2" style="min-width:130px;">ชื่อ-นามสกุล</th>
+      ${monthHeaderRow}
+      <th colspan="4" style="background:#374151;color:#fff;">รวม</th>
+      <th rowspan="2" style="background:#374151;color:#fff;">%มา</th>
+    </tr>
+    <tr>
+      ${dayHeaderRow}
+      <th style="background:#d1fae5;color:#065f46;font-size:9px;">ม</th>
+      <th style="background:#fee2e2;color:#991b1b;font-size:9px;">ข</th>
+      <th style="background:#fef3c7;color:#92400e;font-size:9px;">ล</th>
+      <th style="background:#e0e7ff;color:#3730a3;font-size:9px;">ส</th>
+    </tr>`,
+    tableBody: bodyRows,
+    summary: `มา <b>${totalP}</b> &nbsp; ขาด <b>${totalA}</b> &nbsp; ลา <b>${totalL}</b> &nbsp; สาย <b>${totalLa}</b> &nbsp;|&nbsp; นักเรียน <b>${students.length}</b> คน`,
+    alertNote: alerts.length ? `⚠️ ขาดเกิน ${threshold} วัน: ${alerts.join(', ')}` : ''
+  });
+  openPrint(html);
+}
+
+function buildPrintPage({school,cls,currentYear,printDate,title,subTitle,orientation,tableHead,tableBody,summary,alertNote}) {
+  return `<!DOCTYPE html><html><head><meta charset="utf-8">
+  <title>${title} ${cls}</title>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&display=swap');
-    body{font-family:'Sarabun',sans-serif;font-size:12px;margin:0;padding:16px;}
-    h2{text-align:center;margin:0;font-size:16px;}
-    h3{text-align:center;margin:4px 0 16px;font-size:13px;color:#555;}
-    table{width:100%;border-collapse:collapse;margin-top:12px;}
-    th,td{border:1px solid #ddd;padding:4px 5px;font-size:11px;}
-    th{background:#1e3a5f;color:white;text-align:center;}
-    td:nth-child(2){min-width:140px;}
-    .summary{margin-top:12px;font-size:11px;color:#444;border-top:1px solid #ddd;padding-top:8px;}
-    .footer{margin-top:24px;display:flex;justify-content:space-around;}
-    .footer div{text-align:center;}
-    @media print{body{padding:8px;} button{display:none;}}
+    @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&display=swap');
+    @page { size: A4 ${orientation}; margin: 10mm 8mm; }
+    * { box-sizing: border-box; }
+    body { font-family:'Sarabun',sans-serif; font-size:11px; margin:0; padding:0; color:#111; }
+
+    /* Header */
+    .print-header { display:flex; align-items:center; justify-content:space-between; border-bottom:2px solid #1e3a5f; padding-bottom:8px; margin-bottom:10px; }
+    .print-header .school { font-size:15px; font-weight:700; color:#1e3a5f; }
+    .print-header .sub    { font-size:11px; color:#555; margin-top:2px; }
+    .print-header .stamp  { text-align:right; font-size:10px; color:#888; }
+    .print-title { text-align:center; font-size:13px; font-weight:700; margin-bottom:8px; color:#1e3a5f; }
+
+    /* Table */
+    table { width:100%; border-collapse:collapse; table-layout:auto; }
+    th,td { border:1px solid #e2e8f0; padding:3px 4px; }
+    th    { font-size:9px; font-weight:600; }
+    td    { font-size:10px; vertical-align:middle; }
+    tbody tr:nth-child(even) { background:#fafafa; }
+    tbody tr:hover { background:#f0f9ff; }
+    td:nth-child(2) { white-space:nowrap; max-width:145px; overflow:hidden; text-overflow:ellipsis; }
+
+    /* Footer */
+    .print-summary { margin-top:8px; font-size:10px; color:#555; border-top:1px solid #e2e8f0; padding-top:6px; }
+    .print-alert   { margin-top:6px; font-size:10px; color:#991b1b; }
+    .sign-row      { display:flex; justify-content:space-around; margin-top:20px; }
+    .sign-box      { text-align:center; font-size:10px; }
+    .sign-line     { border-bottom:1px solid #666; width:160px; margin:0 auto 4px; padding-top:24px; }
+    @media print { body{-webkit-print-color-adjust:exact;print-color-adjust:exact;} }
   </style></head><body>
-  <h2>${school}</h2>
-  <h3>รายงานการเข้าเรียน ชั้น ${cls} ปีการศึกษา ${currentYear}</h3>
+
+  <div class="print-header">
+    <div>
+      <div class="school">${school}</div>
+      <div class="sub">${subTitle}</div>
+    </div>
+    <div class="stamp">พิมพ์วันที่ ${printDate}</div>
+  </div>
+  <div class="print-title">${title}</div>
+
   <table>
-    <thead><tr>
-      <th style="width:28px;">#</th>
-      <th style="min-width:140px;">ชื่อ-นามสกุล</th>
-      ${dateHeaders}
-      <th style="background:#065f46;">มา</th>
-      <th style="background:#991b1b;">ขาด</th>
-      <th style="background:#92400e;">ลา</th>
-      <th style="background:#3730a3;">สาย</th>
-      <th style="background:#374151;">%มา</th>
-    </tr></thead>
-    <tbody>${bodyRows}</tbody>
+    <thead>${tableHead}</thead>
+    <tbody>${tableBody}</tbody>
   </table>
-  <div class="summary">
-    สรุปรวม: มา <b>${totalP}</b> | ขาด <b>${totalA}</b> | ลา <b>${totalL}</b> | สาย <b>${totalLa}</b> &nbsp;|&nbsp;
-    วันเรียน <b>${dates.length}</b> วัน | นักเรียน <b>${students.length}</b> คน
+
+  <div class="print-summary">${summary}</div>
+  ${alertNote ? `<div class="print-alert">${alertNote}</div>` : ''}
+
+  <div class="sign-row">
+    <div class="sign-box"><div class="sign-line"></div>ครูผู้สอน</div>
+    <div class="sign-box"><div class="sign-line"></div>หัวหน้าฝ่ายวิชาการ</div>
+    <div class="sign-box"><div class="sign-line"></div>ผู้อำนวยการโรงเรียน</div>
   </div>
-  <div class="footer">
-    <div>ลงชื่อ ________________________________<br><small>ครูผู้สอน</small></div>
-    <div>ลงชื่อ ________________________________<br><small>หัวหน้าฝ่ายวิชาการ</small></div>
-    <div>ลงชื่อ ________________________________<br><small>ผู้อำนวยการโรงเรียน</small></div>
-  </div>
+
   <script>window.onload=()=>window.print();<\/script>
   </body></html>`;
+}
 
+function openPrint(html) {
   const w = window.open('','_blank');
+  if (!w) { showToast('กรุณาอนุญาต Popup ในเบราว์เซอร์','error'); return; }
   w.document.write(html);
   w.document.close();
 }
