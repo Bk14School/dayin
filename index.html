@@ -473,6 +473,10 @@ body { font-family: 'Prompt', sans-serif; background: var(--bg); color: var(--te
           style="background:linear-gradient(135deg,#0ea5e9,#0284c7);color:#fff;border-color:#0284c7;font-weight:700;">
     🖨️ พิมพ์รายงานประจำวัน
   </button>
+        <button class="nav-btn" onclick="openPrintHomeroomModal()"
+        style="background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;border-color:#d97706;font-weight:700;">
+  🗣️ พิมพ์รายงานโฮมรูม
+</button>
 </div>
       </div>
 
@@ -1335,6 +1339,7 @@ async function saveAttendance() {
   }
 
   showProgress('กำลังบันทึก...');
+ showProgress('กำลังบันทึก...');
   try {
     await api('saveAttendance', {
       year: currentYear,
@@ -1343,12 +1348,22 @@ async function saveAttendance() {
       records,
       teacherName: currentUser.name
     });
-    showToast('✅ บันทึกสำเร็จ!','success');
+    
+    hideProgress();
+    showToast('✅ บันทึกเช็คชื่อสำเร็จ!','success');
+    
+    // --- โค้ดที่เพิ่มใหม่: ถามว่าจะทำโฮมรูมต่อไหม ---
+    setTimeout(() => {
+      if(confirm('บันทึกเช็คชื่อเรียบร้อย!\nคุณต้องการบันทึกข้อมูล "โฮมรูม" ประจำวันต่อเลยหรือไม่?')) {
+        openHomeroomModal();
+      }
+    }, 500);
+    // ------------------------------------------
+
   } catch(e) {
     showToast('บันทึกไม่สำเร็จ: ' + e.message,'error');
+    hideProgress();
   }
-  hideProgress();
-}
 
 // =============================================
 // Add Student
@@ -3338,8 +3353,259 @@ function printWarningLetter(studentId) {
 
   openPrint(html);
 }
+
+  // ==============================================
+// ระบบ Homeroom (บันทึก + พิมพ์)
+// ==============================================
+
+// 1. เปิดหน้าต่างบันทึก
+function openHomeroomModal() {
+  document.getElementById('hrInfoLabel').textContent = `วันที่: ${currentDate} | ชั้นเรียน: ${currentUser.classroom}`;
+  document.querySelectorAll('.hr-topic').forEach(chk => chk.checked = false);
+  document.getElementById('hrNote').value = '';
+  new bootstrap.Modal(document.getElementById('homeroomModal')).show();
+}
+
+// 2. บันทึกข้อมูลโฮมรูม
+async function saveHomeroom() {
+  const topics = [];
+  document.querySelectorAll('.hr-topic:checked').forEach(chk => topics.push(chk.value));
+  const note = document.getElementById('hrNote').value.trim();
+
+  if(topics.length === 0 && note === '') {
+    showToast('กรุณาเลือกหัวข้ออบรม หรือกรอกหมายเหตุ', 'error'); return;
+  }
+
+  showProgress('กำลังบันทึกโฮมรูมลงไฟล์รายเทอม...');
+  try {
+    await api('saveHomeroomLog', {
+      year: currentYear,
+      date: currentDate,
+      classroom: currentUser.classroom,
+      teacher: currentUser.name,
+      topics: topics.join(', '),
+      note: note
+    });
+    showToast('✅ บันทึกโฮมรูมสำเร็จ!', 'success');
+    bootstrap.Modal.getInstance(document.getElementById('homeroomModal')).hide();
+  } catch(e) {
+    showToast('บันทึกโฮมรูมล้มเหลว: ' + e.message, 'error');
+  }
+  hideProgress();
+}
+
+// 3. เปิดหน้าต่างเลือกพิมพ์
+function openPrintHomeroomModal() {
+  const currentMonth = currentDate.split('/')[1]; 
+  document.getElementById('hrMonthPicker').value = currentMonth;
+  document.getElementById('lblPrintHrDate').textContent = currentDate;
+  new bootstrap.Modal(document.getElementById('printHomeroomModal')).show();
+}
+
+// 4. แยกไปพิมพ์รายวัน หรือ รายเดือน
+function printHomeroomChoice(mode) {
+  bootstrap.Modal.getInstance(document.getElementById('printHomeroomModal')).hide();
+  if (mode === 'daily') printDailyHomeroomReport();
+  else printMonthlyHomeroomReport(document.getElementById('hrMonthPicker').value);
+}
+
+// 5. พิมพ์รายวัน
+async function printDailyHomeroomReport() {
+  showProgress('กำลังดึงข้อมูล...');
+  try {
+    const logs = await api('getHomeroomLogs', { year: currentYear, classroom: currentUser.classroom });
+    const todayLog = logs.find(l => l.date === currentDate);
+    
+    let topics = todayLog ? todayLog.topics.split(',') : [];
+    let note = todayLog ? todayLog.note : '';
+    
+    if (!todayLog && !confirm(`ยังไม่ได้บันทึกโฮมรูมของวันที่ ${currentDate}\nต้องการพิมพ์รายงานโฮมรูมเปล่าๆ หรือไม่?`)) {
+      hideProgress(); return;
+    }
+
+    const school = document.getElementById('navSchoolName')?.textContent || 'โรงเรียนบ้านคลอง 14';
+    let abs = [], lea = [], sic = [];
+    
+    // ดึงคนที่ไม่ได้มาเรียนจากหน้าจอเช็คชื่อปัจจุบัน
+    students.forEach(s => {
+      if(attendance[s.studentId] === 'ข') abs.push(s.name);
+      else if(attendance[s.studentId] === 'ล') lea.push(s.name);
+      else if(attendance[s.studentId] === 'ป') sic.push(s.name);
+    });
+
+    const totalAbsent = abs.length + lea.length + sic.length;
+    let attHtml = totalAbsent === 0 
+      ? `<div style="background:#d1fae5; color:#065f46; padding:15px; border-radius:8px; text-align:center; font-weight:bold; font-size:16px; border:1px solid #34d399;">✅ วันนี้นักเรียนมาเรียนครบและเข้าร่วมโฮมรูมครบทุกคน</div>`
+      : `<div style="background:#fee2e2; border:1px solid #fca5a5; padding:15px; border-radius:8px;">
+          <h4 style="margin-top:0; color:#991b1b; font-size:15px;">รายชื่อนักเรียนที่ไม่ได้เข้าร่วมโฮมรูม</h4>
+          <ul style="margin-bottom:0; font-size:14px; padding-left:20px;">
+            ${abs.length ? `<li><b>ขาด:</b> ${abs.join(', ')}</li>` : ''}
+            ${lea.length ? `<li><b>ลา:</b> ${lea.join(', ')}</li>` : ''}
+            ${sic.length ? `<li><b>ป่วย:</b> ${sic.join(', ')}</li>` : ''}
+          </ul>
+        </div>`;
+
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>โฮมรูม ${currentDate}</title>
+    <style>@import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&display=swap');
+    body{font-family:'Sarabun',sans-serif; padding:20px; font-size:15px; color:#111;}
+    .box{border:1px solid #ccc; padding:15px; border-radius:8px; min-height:80px;}</style></head><body>
+      <h2 style="text-align:center;">บันทึกกิจกรรมโฮมรูม (Homeroom)</h2>
+      <h3 style="text-align:center;">${school}</h3>
+      <p style="text-align:center;"><b>ชั้นเรียน:</b> ${currentUser.classroom} &nbsp;|&nbsp; <b>วันที่:</b> ${thaiDateFull(currentDate)}</p>
+      ${attHtml}
+      <h4>📋 หัวข้อที่อบรม</h4>
+      <ul style="line-height:1.8;">${topics.length>0 ? topics.map(t=>`<li>${t.trim()}</li>`).join('') : '<li>- ไม่มีข้อมูล -</li>'}</ul>
+      <h4>📝 หมายเหตุเพิ่มเติม</h4>
+      <div class="box">${note?note.replace(/\n/g,'<br>'):'- ไม่มี -'}</div>
+      <div style="display:flex; justify-content:space-around; margin-top:60px; text-align:center;">
+        <div>( ${currentUser.name} )<br>ครูประจำชั้น</div>
+        <div>( .................................................. )<br>ผู้อำนวยการโรงเรียน</div>
+      </div><script>window.onload=()=>window.print();<\/script></body></html>`;
+    openPrint(html);
+  } catch(e) { showToast(e.message, 'error'); }
+  hideProgress();
+}
+
+// 6. พิมพ์รายเดือน (ดึงข้อมูลทั้งเดือนจากไฟล์เทอม)
+async function printMonthlyHomeroomReport(month) {
+  showProgress('กำลังดึงข้อมูลทั้งเดือน...');
+  try {
+    const reportData = await api('getReport', { year: currentYear, classroom: currentUser.classroom, month: month });
+    const logs = await api('getHomeroomLogs', { year: currentYear, classroom: currentUser.classroom });
+    
+    const THAI_M =['','มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+    const school = document.getElementById('navSchoolName')?.textContent || 'โรงเรียน';
+    const logMap = {}; logs.forEach(l => logMap[l.date] = l);
+
+    if(reportData.dates.length === 0) { showToast('เดือนนี้ยังไม่มีการเช็คชื่อ', 'error'); hideProgress(); return; }
+
+    let rows = '';
+    reportData.dates.forEach((dateStr, idx) => {
+      let abs = [];
+      reportData.students.forEach(s => {
+        const st = reportData.attendance[s.studentId][dateStr];
+        if (st === 'ข' || st === 'ล' || st === 'ป') abs.push(`${s.name} (${st})`);
+      });
+
+      const dayLog = logMap[dateStr];
+      const topics = dayLog ? dayLog.topics.replace(/,/g, '<br>- ') : '-';
+      const note = dayLog ? dayLog.note : '-';
+      const absText = abs.length ? abs.join('<br>') : '<span style="color:#166534;">มาครบ</span>';
+
+      rows += `<tr>
+        <td style="text-align:center;">${idx+1}</td>
+        <td style="text-align:center;">${dateStr.substring(0,5)}</td>
+        <td>${topics !== '-' ? '- '+topics : '-'}</td>
+        <td style="color:#991b1b; font-size:11px;">${absText}</td>
+        <td>${note}</td>
+        <td></td>
+      </tr>`;
+    });
+
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>สมุดโฮมรูม ${THAI_M[parseInt(month)]}</title>
+    <style>@import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&display=swap');
+    @page{size:A4 landscape; margin:15mm;} body{font-family:'Sarabun',sans-serif; font-size:13px;}
+    table{width:100%; border-collapse:collapse; margin-top:10px;} th,td{border:1px solid #000; padding:6px; vertical-align:top;}
+    th{background:#e2e8f0; text-align:center;} .head{text-align:center; margin-bottom:15px;}</style></head><body>
+      <div class="head">
+        <h2>บันทึกการจัดกิจกรรมโฮมรูม (Homeroom) รายเดือน</h2>
+        <h3>${school}</h3>
+        <p><b>ชั้นเรียน:</b> ${currentUser.classroom} &nbsp;|&nbsp; <b>เดือน:</b> ${THAI_M[parseInt(month)]} &nbsp;|&nbsp; <b>ครู:</b> ${currentUser.name}</p>
+      </div>
+      <table>
+        <thead><tr><th width="40">ที่</th><th width="60">ว/ด/ป</th><th width="300">หัวข้อที่อบรม</th><th width="200">นักเรียนที่ ข/ล/ป</th><th width="200">หมายเหตุ</th><th width="80">ลายมือชื่อ</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+      <div style="display:flex; justify-content:space-around; margin-top:30px; text-align:center;">
+        <div>ลงชื่อ.......................................................ครูประจำชั้น<br>(${currentUser.name})</div>
+        <div>ลงชื่อ.......................................................ฝ่ายวิชาการ</div>
+        <div>ลงชื่อ.......................................................ผู้อำนวยการ</div>
+      </div><script>window.onload=()=>window.print();<\/script></body></html>`;
+    openPrint(html);
+  } catch(e) { showToast(e.message, 'error'); }
+  hideProgress();
+}
   
 </script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+  <!-- ============================================== -->
+<!-- Modal 1: สำหรับบันทึกโฮมรูม (Homeroom) -->
+<!-- ============================================== -->
+<div class="modal fade" id="homeroomModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content">
+      <div class="modal-header" style="background:#f59e0b; color:white;">
+        <h5 class="modal-title fw-bold">🗣️ บันทึกกิจกรรมโฮมรูม (Homeroom)</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="alert alert-warning py-2 text-dark" id="hrInfoLabel" style="background:#fef3c7; border-color:#fde68a;">
+          วันที่: ... | ชั้น: ...
+        </div>
+        
+        <p class="fw-bold mb-2">หัวข้อที่ให้การอบรม (เลือกได้มากกว่า 1 ข้อ):</p>
+        <div class="row g-2 mb-3" id="hrChecklist">
+          <div class="col-6 col-md-4"><label><input type="checkbox" value="การแต่งกาย/ทรงผม" class="hr-topic"> 1. การแต่งกาย/ทรงผม</label></div>
+          <div class="col-6 col-md-4"><label><input type="checkbox" value="ความสะอาด/เวรประจำวัน" class="hr-topic"> 2. ความสะอาด/เวร</label></div>
+          <div class="col-6 col-md-4"><label><input type="checkbox" value="การเรียน/การส่งงาน" class="hr-topic"> 3. การเรียน/การส่งงาน</label></div>
+          <div class="col-6 col-md-4"><label><input type="checkbox" value="ความปลอดภัย/จราจร" class="hr-topic"> 4. ความปลอดภัย/จราจร</label></div>
+          <div class="col-6 col-md-4"><label><input type="checkbox" value="ยาเสพติด/บุหรี่/กัญชา" class="hr-topic"> 5. ยาเสพติด/บุหรี่</label></div>
+          <div class="col-6 col-md-4"><label><input type="checkbox" value="การใช้สื่อโซเชียลมีเดีย" class="hr-topic"> 6. การใช้โซเชียลมีเดีย</label></div>
+          <div class="col-6 col-md-4"><label><input type="checkbox" value="การรังแกกัน (Bullying)" class="hr-topic"> 7. การรังแกกัน (Bully)</label></div>
+          <div class="col-6 col-md-4"><label><input type="checkbox" value="จิตอาสา/มารยาท" class="hr-topic"> 8. จิตอาสา/มารยาท</label></div>
+          <div class="col-6 col-md-4"><label><input type="checkbox" value="คุณธรรม/จริยธรรม" class="hr-topic"> 9. คุณธรรม/จริยธรรม</label></div>
+          <div class="col-6 col-md-4"><label><input type="checkbox" value="แจ้งข่าวสารจากโรงเรียน" class="hr-topic"> 10. แจ้งข่าวสารโรงเรียน</label></div>
+        </div>
+
+        <div class="mb-3">
+          <label class="fw-bold mb-1">📝 หมายเหตุ / พฤติกรรมที่พบเพิ่มเติม:</label>
+          <textarea class="form-control" id="hrNote" rows="3" placeholder="ระบุรายละเอียดเพิ่มเติม (ถ้ามี)..."></textarea>
+        </div>
+      </div>
+      <div class="modal-footer border-0 bg-light">
+        <button class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
+        <button class="btn btn-warning px-4 fw-bold text-dark" id="btnSaveHR" onclick="saveHomeroom()">💾 บันทึกโฮมรูม</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================== -->
+<!-- Modal 2: เลือกพิมพ์รายงานโฮมรูม -->
+<!-- ============================================== -->
+<div class="modal fade" id="printHomeroomModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header" style="background:#f59e0b; color:white;">
+        <h5 class="modal-title fw-bold">🖨️ พิมพ์รายงานโฮมรูม</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body text-center py-4">
+        <p class="text-muted mb-4">กรุณาเลือกรูปแบบรายงานที่ต้องการพิมพ์</p>
+        
+        <div class="d-grid gap-3">
+          <button class="btn btn-outline-warning btn-lg fw-bold text-dark" onclick="printHomeroomChoice('daily')">
+            📄 พิมพ์ของวันนี้<br><span style="font-size:0.8rem; font-weight:normal;">(เฉพาะวันที่ <span id="lblPrintHrDate"></span>)</span>
+          </button>
+          
+          <div class="d-flex gap-2 align-items-stretch mt-3">
+            <select id="hrMonthPicker" class="form-select fw-bold" style="border-color:#f59e0b;">
+              <option value="01">มกราคม</option> <option value="02">กุมภาพันธ์</option>
+              <option value="03">มีนาคม</option>   <option value="04">เมษายน</option>
+              <option value="05">พฤษภาคม</option>   <option value="06">มิถุนายน</option>
+              <option value="07">กรกฎาคม</option>   <option value="08">สิงหาคม</option>
+              <option value="09">กันยายน</option>   <option value="10">ตุลาคม</option>
+              <option value="11">พฤศจิกายน</option> <option value="12">ธันวาคม</option>
+            </select>
+            <button class="btn btn-warning flex-grow-1 fw-bold text-dark" onclick="printHomeroomChoice('monthly')">
+              📊 พิมพ์สรุปทั้งเดือน
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 </body>
 </html>
