@@ -498,7 +498,7 @@ function openConfigModal() {
 
 async function saveConfig() {
   const val = document.getElementById('configYearInput').value.trim();
-  if (!val || !/^[12]\/\d{4}$/.test(val)) {
+  if (!val || !(/^[12]\/\d{4}$/.test(val))) {
     showToast('รูปแบบไม่ถูกต้อง ตัวอย่าง: 1/2569 หรือ 2/2569', 'error'); return;
   }
   bootstrap.Modal.getInstance(document.getElementById('configModal')).hide();
