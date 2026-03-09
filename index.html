@@ -154,6 +154,15 @@ body { font-family: 'Prompt', sans-serif; background: var(--bg); color: var(--te
 .report-table .s-ข { color: var(--status-absent-fg);  background: var(--status-absent-bg);  font-weight: 700; border-radius: 4px; }
 .report-table .s-ล { color: var(--status-leave-fg);   background: var(--status-leave-bg);   font-weight: 700; border-radius: 4px; }
 .report-table .s-ส { color: var(--status-late-fg);    background: var(--status-late-bg);    font-weight: 700; border-radius: 4px; }
+
+/* Report enhancements */
+.stat-card { background: white; border-radius: 12px; padding: 16px; box-shadow: var(--shadow); text-align: center; }
+.stat-num  { font-size: 2rem; font-weight: 800; line-height: 1; }
+.stat-label{ font-size: .78rem; color: #6b7280; margin-top: 4px; }
+.alert-warn{ background: #fff5f5; border: 1.5px solid #fca5a5; border-radius: 12px; padding: 14px 16px; }
+.badge-alert{ background: #fee2e2; color: #991b1b; border-radius: 20px; padding: 3px 10px; font-size: .82rem; }
+.badge-alert-sm{ font-size: .7rem; vertical-align: middle; }
+#reportSummary{ font-size: .85rem; color: #6b7280; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .report-table .s-- { color: #94a3b8; font-size: 0.75rem; }
 .report-summary { margin-top: 6px; padding: 6px 12px; border-radius: 6px; background: #f1f5f9; font-size: 0.8rem; color: var(--secondary); }
 
@@ -318,20 +327,32 @@ body { font-family: 'Prompt', sans-serif; background: var(--bg); color: var(--te
 <!-- ======= Report Page ======= -->
 <div id="reportPage" class="page-section">
   <div class="container-main">
-    <div class="app-card">
-      <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
-        <div class="card-title mb-0">📊 รายงานสรุปการเข้าเรียน</div>
-        <button class="nav-btn" onclick="exportReportCSV()">📥 Export CSV</button>
-      </div>
 
-      <!-- Controls -->
+    <!-- Controls Card -->
+    <div class="app-card mb-3">
+      <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+        <div class="card-title mb-0">📊 รายงานการเข้าเรียน</div>
+        <div class="d-flex gap-2 flex-wrap">
+          <button class="nav-btn" onclick="exportReportCSV()" title="Export CSV">📥 CSV</button>
+          <button class="nav-btn" onclick="exportReportExcel()" title="Export Excel">📊 Excel</button>
+          <button class="nav-btn" onclick="printReport()" title="พิมพ์ PDF">🖨️ พิมพ์</button>
+        </div>
+      </div>
       <div class="report-controls">
         <div>
           <label>ชั้นเรียน</label>
           <select id="rptClassroom" onchange="loadReport()"></select>
         </div>
         <div>
-          <label>เดือน (เว้นว่าง = ทั้งหมด)</label>
+          <label>ช่วงเวลา</label>
+          <select id="rptPeriod" onchange="onPeriodChange()">
+            <option value="month">รายเดือน</option>
+            <option value="week">รายสัปดาห์</option>
+            <option value="term">รายเทอม (ทั้งหมด)</option>
+          </select>
+        </div>
+        <div id="monthSelectWrap">
+          <label>เดือน</label>
           <select id="rptMonth" onchange="loadReport()">
             <option value="">-- ทั้งหมด --</option>
             <option value="01">มกราคม</option><option value="02">กุมภาพันธ์</option>
@@ -342,23 +363,43 @@ body { font-family: 'Prompt', sans-serif; background: var(--bg); color: var(--te
             <option value="11">พฤศจิกายน</option><option value="12">ธันวาคม</option>
           </select>
         </div>
-        <button class="nav-btn" onclick="loadReport()" style="height:38px; margin-top:24px;">🔄 โหลด</button>
+        <div id="weekSelectWrap" style="display:none;">
+          <label>สัปดาห์ที่ (เลขสัปดาห์)</label>
+          <input type="number" id="rptWeek" min="1" max="52" placeholder="เช่น 10" class="form-control" style="width:100px;" onchange="loadReport()">
+        </div>
+        <div>
+          <label>เกณฑ์แจ้งเตือนขาด (วัน)</label>
+          <input type="number" id="rptThreshold" value="3" min="1" max="30" class="form-control" style="width:80px;" onchange="renderReport(reportData)">
+        </div>
+        <button class="nav-btn" onclick="loadReport()" style="height:38px;margin-top:24px;">🔄 โหลด</button>
       </div>
+    </div>
 
-      <!-- Summary stats -->
-      <div class="row g-3 mb-4" id="reportStats" style="display:none !important;"></div>
+    <!-- KPI Cards -->
+    <div class="row g-3 mb-3" id="rptKpiRow" style="display:none;"></div>
 
-      <!-- Table -->
+    <!-- Alert Box -->
+    <div id="rptAlertBox" class="mb-3" style="display:none;"></div>
+
+    <!-- Chart -->
+    <div class="app-card mb-3" id="rptChartCard" style="display:none;">
+      <div class="card-title">📈 แนวโน้มการมาเรียนรายวัน</div>
+      <canvas id="rptChart" height="90"></canvas>
+    </div>
+
+    <!-- Table -->
+    <div class="app-card" id="rptTableCard">
       <div class="report-table-wrap">
         <table class="report-table" id="reportTable">
           <thead id="reportHead"></thead>
           <tbody id="reportBody">
-            <tr><td colspan="20" class="text-center py-5 text-muted">เลือกชั้นเรียนและกด "โหลด" เพื่อดูรายงาน</td></tr>
+            <tr><td colspan="20" class="text-center py-5 text-muted">เลือกชั้นเรียนแล้วกด โหลด</td></tr>
           </tbody>
         </table>
       </div>
       <div class="report-summary mt-2" id="reportSummary"></div>
     </div>
+
   </div>
 </div>
 
@@ -414,6 +455,8 @@ body { font-family: 'Prompt', sans-serif; background: var(--bg); color: var(--te
 </div>
 
 <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
 // =============================================
@@ -781,6 +824,9 @@ async function confirmAddStudent() {
 // =============================================
 // Report
 // =============================================
+// =============================================
+// Report
+// =============================================
 function setupReportClassroomSelect() {
   const sel = document.getElementById('rptClassroom');
   sel.innerHTML = '';
@@ -793,13 +839,39 @@ function setupReportClassroomSelect() {
   }
 }
 
+function onPeriodChange() {
+  const p = document.getElementById('rptPeriod').value;
+  document.getElementById('monthSelectWrap').style.display = p === 'week' ? 'none' : 'block';
+  document.getElementById('weekSelectWrap').style.display  = p === 'week' ? 'block' : 'none';
+  if (p === 'term') document.getElementById('rptMonth').value = '';
+  loadReport();
+}
+
 async function loadReport() {
-  const cls = document.getElementById('rptClassroom').value;
-  const month = document.getElementById('rptMonth').value;
+  const cls    = document.getElementById('rptClassroom').value;
+  const period = document.getElementById('rptPeriod').value;
+  let   month  = document.getElementById('rptMonth').value;
   if (!cls) return;
+
+  // รายสัปดาห์ — คำนวณเดือนที่อยู่ในสัปดาห์นั้น
+  let weekFilter = null;
+  if (period === 'week') {
+    const wn = parseInt(document.getElementById('rptWeek').value) || getWeekNumber(new Date());
+    weekFilter = wn;
+    month = '';
+  } else if (period === 'term') {
+    month = '';
+  }
+
   showProgress('กำลังโหลดรายงาน...');
   try {
-    reportData = await api('getReport', { year: currentYear, classroom: cls, month });
+    const raw = await api('getReport', { year: currentYear, classroom: cls, month });
+    // กรองสัปดาห์ถ้าต้องการ
+    if (weekFilter !== null && raw.dates) {
+      const filtered = raw.dates.filter(d => getWeekNumber(thaiDateToJS(d)) === weekFilter);
+      raw.dates = filtered;
+    }
+    reportData = raw;
     renderReport(reportData);
   } catch(e) {
     showToast('โหลดรายงานไม่สำเร็จ: ' + e.message,'error');
@@ -807,71 +879,317 @@ async function loadReport() {
   hideProgress();
 }
 
-function renderReport(data) {
-  const { students, dates, attendance } = data;
-  const head = document.getElementById('reportHead');
-  const body = document.getElementById('reportBody');
-  const summary = document.getElementById('reportSummary');
+function getWeekNumber(d) {
+  const date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  const dayNum = date.getUTCDay() || 7;
+  date.setUTCDate(date.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(date.getUTCFullYear(),0,1));
+  return Math.ceil((((date - yearStart) / 86400000) + 1)/7);
+}
 
-  if (!students.length) {
-    head.innerHTML=''; body.innerHTML='<tr><td class="text-center py-5 text-muted" colspan="5">ยังไม่มีข้อมูลสำหรับชั้นนี้</td></tr>'; summary.textContent=''; return;
+function thaiDateToJS(str) {
+  // "dd/mm/yyyy(พ.ศ.)" → JS Date
+  const p = str.split('/');
+  return new Date(parseInt(p[2])-543, parseInt(p[1])-1, parseInt(p[0]));
+}
+
+function calcStats(students, dates, attendance) {
+  let totalP=0,totalA=0,totalL=0,totalLa=0;
+  const perDay = {}; // date → {p,total}
+  dates.forEach(d => { perDay[d]={p:0,total:0}; });
+  const alerts = [];
+  const threshold = parseInt(document.getElementById('rptThreshold').value)||3;
+
+  students.forEach(s => {
+    const att = attendance[s.studentId]||{};
+    let p=0,a=0,l=0,la=0;
+    dates.forEach(d => {
+      const v = att[d]||'-';
+      if(v==='ม'){p++;perDay[d].p++;perDay[d].total++;}
+      else if(v==='ข'){a++;perDay[d].total++;}
+      else if(v==='ล'){l++;perDay[d].total++;}
+      else if(v==='ส'){la++;perDay[d].total++;}
+    });
+    totalP+=p; totalA+=a; totalL+=l; totalLa+=la;
+    if(a >= threshold) alerts.push({name:s.name,absent:a,total:dates.length});
+  });
+  return {totalP,totalA,totalL,totalLa,perDay,alerts,threshold};
+}
+
+let rptChartInstance = null;
+
+function renderReport(data) {
+  if (!data) return;
+  const { students, dates, attendance } = data;
+  const head    = document.getElementById('reportHead');
+  const body    = document.getElementById('reportBody');
+  const summary = document.getElementById('reportSummary');
+  const kpiRow  = document.getElementById('rptKpiRow');
+  const alertBox= document.getElementById('rptAlertBox');
+  const chartCard=document.getElementById('rptChartCard');
+
+  if (!students || !students.length) {
+    head.innerHTML='';
+    body.innerHTML='<tr><td class="text-center py-5 text-muted" colspan="10">ยังไม่มีข้อมูล</td></tr>';
+    summary.textContent='';
+    kpiRow.style.display='none';
+    alertBox.style.display='none';
+    chartCard.style.display='none';
+    return;
   }
 
-  // Head
+  const stats = calcStats(students, dates, attendance);
+
+  // --- KPI Cards ---
+  const totalDays = dates.length;
+  const totalSlots = students.length * totalDays || 1;
+  const pct = s => totalSlots ? Math.round(s/totalSlots*100) : 0;
+  kpiRow.style.display='flex';
+  kpiRow.innerHTML = `
+    <div class="col-6 col-md-3"><div class="stat-card" style="border-top:4px solid var(--success);">
+      <div class="stat-num" style="color:var(--success);">${stats.totalP}</div>
+      <div class="stat-label">✅ มาเรียน (${pct(stats.totalP)}%)</div>
+    </div></div>
+    <div class="col-6 col-md-3"><div class="stat-card" style="border-top:4px solid var(--danger);">
+      <div class="stat-num" style="color:var(--danger);">${stats.totalA}</div>
+      <div class="stat-label">❌ ขาด (${pct(stats.totalA)}%)</div>
+    </div></div>
+    <div class="col-6 col-md-3"><div class="stat-card" style="border-top:4px solid var(--warning);">
+      <div class="stat-num" style="color:var(--warning);">${stats.totalL}</div>
+      <div class="stat-label">📋 ลา (${pct(stats.totalL)}%)</div>
+    </div></div>
+    <div class="col-6 col-md-3"><div class="stat-card" style="border-top:4px solid var(--info);">
+      <div class="stat-num" style="color:var(--info);">${stats.totalLa}</div>
+      <div class="stat-label">⏰ สาย (${pct(stats.totalLa)}%)</div>
+    </div></div>`;
+
+  // --- Alert Box ---
+  if (stats.alerts.length) {
+    alertBox.style.display='block';
+    alertBox.innerHTML = `<div class="alert-warn">
+      <b>⚠️ นักเรียนขาดเกิน ${stats.threshold} วัน (${stats.alerts.length} คน)</b>
+      <div class="mt-2 d-flex flex-wrap gap-2">
+        ${stats.alerts.map(a=>`<span class="badge-alert">${a.name} <b>${a.absent}</b>/${a.total} วัน</span>`).join('')}
+      </div>
+    </div>`;
+  } else {
+    alertBox.style.display='none';
+  }
+
+  // --- Chart ---
+  if (dates.length > 0) {
+    chartCard.style.display='block';
+    const labels = dates.map(d=>d.substring(0,5));
+    const pctData = dates.map(d => {
+      const pd = stats.perDay[d];
+      return pd && pd.total ? Math.round(pd.p/pd.total*100) : 0;
+    });
+    if (rptChartInstance) rptChartInstance.destroy();
+    const ctx = document.getElementById('rptChart').getContext('2d');
+    rptChartInstance = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [{
+          label: '% มาเรียน',
+          data: pctData,
+          borderColor: '#0ea5e9',
+          backgroundColor: 'rgba(14,165,233,0.1)',
+          fill: true,
+          tension: 0.4,
+          pointRadius: 4,
+          pointBackgroundColor: pctData.map(v => v < 80 ? '#ef4444' : '#0ea5e9'),
+        }]
+      },
+      options: {
+        responsive: true,
+        scales: {
+          y: { min:0, max:100, ticks:{ callback: v => v+'%' } }
+        },
+        plugins: {
+          legend: { display: false },
+          tooltip: { callbacks: { label: ctx => ctx.parsed.y + '%' } }
+        }
+      }
+    });
+  } else {
+    chartCard.style.display='none';
+  }
+
+  // --- Table ---
   head.innerHTML = `<tr>
-    <th class="name-col" style="min-width:40px;">#</th>
-    <th class="name-col" style="min-width:160px;">ชื่อ-นามสกุล</th>
-    ${dates.map(d=>`<th>${d.substring(0,5)}</th>`).join('')}
-    <th style="background:#065f46;">มา</th>
-    <th style="background:#991b1b;">ขาด</th>
-    <th style="background:#92400e;">ลา</th>
-    <th style="background:#3730a3;">สาย</th>
+    <th style="min-width:36px;">#</th>
+    <th style="min-width:160px;">ชื่อ-นามสกุล</th>
+    ${dates.map(d=>`<th title="${d}">${d.substring(0,5)}</th>`).join('')}
+    <th style="background:#065f46;color:#fff;">มา</th>
+    <th style="background:#991b1b;color:#fff;">ขาด</th>
+    <th style="background:#92400e;color:#fff;">ลา</th>
+    <th style="background:#3730a3;color:#fff;">สาย</th>
+    <th style="background:#374151;color:#fff;">%มา</th>
   </tr>`;
 
-  // Body
-  let totalPresent=0, totalAbsent=0, totalLeave=0, totalLate=0;
+  const threshold = parseInt(document.getElementById('rptThreshold').value)||3;
   body.innerHTML = students.map((s,i) => {
-    const att = attendance[s.studentId] || {};
+    const att = attendance[s.studentId]||{};
     let p=0,a=0,l=0,la=0;
     const cells = dates.map(d => {
-      const v = att[d] || '-';
-      if(v==='ม') p++; else if(v==='ข') a++; else if(v==='ล') l++; else if(v==='ส') la++;
+      const v = att[d]||'-';
+      if(v==='ม')p++; else if(v==='ข')a++; else if(v==='ล')l++; else if(v==='ส')la++;
       return `<td><span class="s-${v}">${v}</span></td>`;
     }).join('');
-    totalPresent+=p; totalAbsent+=a; totalLeave+=l; totalLate+=la;
-    return `<tr>
-      <td class="name-col text-center text-muted" style="font-weight:500;">${i+1}</td>
-      <td class="name-col">${s.name}</td>
+    const pct = dates.length ? Math.round(p/dates.length*100) : 0;
+    const rowAlert = a >= threshold ? 'style="background:#fff5f5;"' : '';
+    return `<tr ${rowAlert}>
+      <td class="text-center text-muted">${i+1}</td>
+      <td>${s.name}${a>=threshold?' <span class="badge-alert-sm">⚠️</span>':''}</td>
       ${cells}
       <td style="font-weight:700;color:var(--success);">${p}</td>
       <td style="font-weight:700;color:var(--danger);">${a}</td>
       <td style="font-weight:700;color:var(--warning);">${l}</td>
       <td style="font-weight:700;color:var(--info);">${la}</td>
+      <td style="font-weight:700;color:${pct<80?'var(--danger)':'var(--success)'};">${pct}%</td>
     </tr>`;
   }).join('');
 
-  summary.textContent = `สรุปรวม: มา ${totalPresent} • ขาด ${totalAbsent} • ลา ${totalLeave} • สาย ${totalLate} | จำนวนวันเรียน: ${dates.length} วัน | นักเรียน: ${students.length} คน`;
+  const cls = document.getElementById('rptClassroom').value;
+  summary.innerHTML = `<span>📚 ชั้น <b>${cls}</b> | นักเรียน <b>${students.length}</b> คน | วันเรียน <b>${dates.length}</b> วัน</span>
+    <span class="ms-3">✅ ${stats.totalP} &nbsp;❌ ${stats.totalA} &nbsp;📋 ${stats.totalL} &nbsp;⏰ ${stats.totalLa}</span>`;
 }
 
+// =============================================
+// Export CSV
+// =============================================
 function exportReportCSV() {
-  if (!reportData || !reportData.students.length) { showToast('ไม่มีข้อมูลให้ Export','error'); return; }
-  const { students, dates, attendance } = reportData;
-  let csv = '\uFEFF#,ชื่อ-นามสกุล,' + dates.join(',') + ',มา,ขาด,ลา,สาย\n';
+  if (!reportData||!reportData.students.length){showToast('ไม่มีข้อมูล','error');return;}
+  const {students,dates,attendance} = reportData;
+  const cls = document.getElementById('rptClassroom').value;
+  let csv = '\uFEFF#,ชื่อ-นามสกุล,' + dates.join(',') + ',มา,ขาด,ลา,สาย,%มาเรียน\n';
   students.forEach((s,i) => {
-    const att = attendance[s.studentId] || {};
+    const att = attendance[s.studentId]||{};
     let p=0,a=0,l=0,la=0;
-    const cells = dates.map(d => {
-      const v = att[d]||'-';
-      if(v==='ม') p++; else if(v==='ข') a++; else if(v==='ล') l++; else if(v==='ส') la++;
-      return v;
-    });
-    csv += `${i+1},${s.name},${cells.join(',')},${p},${a},${l},${la}\n`;
+    const cells = dates.map(d=>{const v=att[d]||'-';if(v==='ม')p++;else if(v==='ข')a++;else if(v==='ล')l++;else if(v==='ส')la++;return v;});
+    const pct = dates.length?Math.round(p/dates.length*100):0;
+    csv += `${i+1},${s.name},${cells.join(',')},${p},${a},${l},${la},${pct}%\n`;
   });
   const a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob([csv], {type:'text/csv;charset=utf-8;'}));
-  a.download = `รายงานเช็คชื่อ_${document.getElementById('rptClassroom').value}_${currentYear}.csv`;
+  a.href = URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'}));
+  a.download = `รายงาน_${cls}_${currentYear}.csv`;
   a.click();
-  showToast('Export สำเร็จ','success');
+  showToast('Export CSV สำเร็จ','success');
+}
+
+// =============================================
+// Export Excel (XLSX via SheetJS)
+// =============================================
+function exportReportExcel() {
+  if (!reportData||!reportData.students.length){showToast('ไม่มีข้อมูล','error');return;}
+  if (typeof XLSX === 'undefined'){showToast('กำลังโหลด XLSX...','info');return;}
+  const {students,dates,attendance} = reportData;
+  const cls = document.getElementById('rptClassroom').value;
+
+  const header = ['#','ชื่อ-นามสกุล',...dates,'มา','ขาด','ลา','สาย','%มาเรียน'];
+  const rows = students.map((s,i)=>{
+    const att=attendance[s.studentId]||{};
+    let p=0,a=0,l=0,la=0;
+    const cells=dates.map(d=>{const v=att[d]||'-';if(v==='ม')p++;else if(v==='ข')a++;else if(v==='ล')l++;else if(v==='ส')la++;return v;});
+    const pct=dates.length?Math.round(p/dates.length*100):0;
+    return [i+1,s.name,...cells,p,a,l,la,pct+'%'];
+  });
+
+  const ws = XLSX.utils.aoa_to_sheet([header,...rows]);
+  // ความกว้างคอลัมน์
+  ws['!cols'] = [{wch:4},{wch:28},...dates.map(()=>({wch:8})),{wch:5},{wch:5},{wch:5},{wch:5},{wch:7}];
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, cls);
+  XLSX.writeFile(wb, `รายงาน_${cls}_${currentYear}.xlsx`);
+  showToast('Export Excel สำเร็จ','success');
+}
+
+// =============================================
+// Print PDF
+// =============================================
+function printReport() {
+  if (!reportData||!reportData.students.length){showToast('ไม่มีข้อมูล','error');return;}
+  const {students,dates,attendance} = reportData;
+  const cls = document.getElementById('rptClassroom').value;
+  const school = document.getElementById('loginSchoolName')?.textContent || 'โรงเรียนบ้านคลอง 14';
+
+  const threshold = parseInt(document.getElementById('rptThreshold').value)||3;
+  let totalP=0,totalA=0,totalL=0,totalLa=0;
+
+  const bodyRows = students.map((s,i)=>{
+    const att=attendance[s.studentId]||{};
+    let p=0,a=0,l=0,la=0;
+    const cells=dates.map(d=>{
+      const v=att[d]||'-';
+      if(v==='ม')p++;else if(v==='ข')a++;else if(v==='ล')l++;else if(v==='ส')la++;
+      const bg=v==='ม'?'#d1fae5':v==='ข'?'#fee2e2':v==='ล'?'#fef3c7':v==='ส'?'#e0e7ff':'#f3f4f6';
+      return `<td style="background:${bg};text-align:center;font-size:10px;">${v}</td>`;
+    }).join('');
+    totalP+=p;totalA+=a;totalL+=l;totalLa+=la;
+    const pct=dates.length?Math.round(p/dates.length*100):0;
+    const rowBg=a>=threshold?'background:#fff5f5;':'';
+    return `<tr style="${rowBg}">
+      <td style="text-align:center;">${i+1}</td>
+      <td>${s.name}${a>=threshold?' ⚠️':''}</td>
+      ${cells}
+      <td style="text-align:center;font-weight:bold;color:#065f46;">${p}</td>
+      <td style="text-align:center;font-weight:bold;color:#991b1b;">${a}</td>
+      <td style="text-align:center;font-weight:bold;color:#92400e;">${l}</td>
+      <td style="text-align:center;font-weight:bold;color:#3730a3;">${la}</td>
+      <td style="text-align:center;font-weight:bold;color:${pct<80?'#991b1b':'#065f46'};">${pct}%</td>
+    </tr>`;
+  }).join('');
+
+  const dateHeaders = dates.map(d=>`<th style="min-width:32px;font-size:9px;text-align:center;background:#0ea5e9;color:white;">${d.substring(0,5)}</th>`).join('');
+
+  const html = `<!DOCTYPE html><html><head><meta charset="utf-8">
+  <title>รายงาน ${cls} ${currentYear}</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&display=swap');
+    body{font-family:'Sarabun',sans-serif;font-size:12px;margin:0;padding:16px;}
+    h2{text-align:center;margin:0;font-size:16px;}
+    h3{text-align:center;margin:4px 0 16px;font-size:13px;color:#555;}
+    table{width:100%;border-collapse:collapse;margin-top:12px;}
+    th,td{border:1px solid #ddd;padding:4px 5px;font-size:11px;}
+    th{background:#1e3a5f;color:white;text-align:center;}
+    td:nth-child(2){min-width:140px;}
+    .summary{margin-top:12px;font-size:11px;color:#444;border-top:1px solid #ddd;padding-top:8px;}
+    .footer{margin-top:24px;display:flex;justify-content:space-around;}
+    .footer div{text-align:center;}
+    @media print{body{padding:8px;} button{display:none;}}
+  </style></head><body>
+  <h2>${school}</h2>
+  <h3>รายงานการเข้าเรียน ชั้น ${cls} ปีการศึกษา ${currentYear}</h3>
+  <table>
+    <thead><tr>
+      <th style="width:28px;">#</th>
+      <th style="min-width:140px;">ชื่อ-นามสกุล</th>
+      ${dateHeaders}
+      <th style="background:#065f46;">มา</th>
+      <th style="background:#991b1b;">ขาด</th>
+      <th style="background:#92400e;">ลา</th>
+      <th style="background:#3730a3;">สาย</th>
+      <th style="background:#374151;">%มา</th>
+    </tr></thead>
+    <tbody>${bodyRows}</tbody>
+  </table>
+  <div class="summary">
+    สรุปรวม: มา <b>${totalP}</b> | ขาด <b>${totalA}</b> | ลา <b>${totalL}</b> | สาย <b>${totalLa}</b> &nbsp;|&nbsp;
+    วันเรียน <b>${dates.length}</b> วัน | นักเรียน <b>${students.length}</b> คน
+  </div>
+  <div class="footer">
+    <div>ลงชื่อ ________________________________<br><small>ครูผู้สอน</small></div>
+    <div>ลงชื่อ ________________________________<br><small>หัวหน้าฝ่ายวิชาการ</small></div>
+    <div>ลงชื่อ ________________________________<br><small>ผู้อำนวยการโรงเรียน</small></div>
+  </div>
+  <script>window.onload=()=>window.print();<\/script>
+  </body></html>`;
+
+  const w = window.open('','_blank');
+  w.document.write(html);
+  w.document.close();
 }
 </script>
 </body>
