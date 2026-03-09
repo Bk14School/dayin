@@ -185,6 +185,24 @@ body { font-family: 'Prompt', sans-serif; background: var(--bg); color: var(--te
 .cal-stu-name { flex:1;font-size:.9rem; }
 .cal-stu-num { width:28px;text-align:center;font-size:.8rem;color:#9ca3af;flex-shrink:0; }
 
+/* Week summary bar */
+.cal-week-bar { grid-column: span 7; display:flex; align-items:center; justify-content:flex-end; padding:2px 4px 4px; gap:6px; }
+.cal-week-pct { font-size:.72rem; font-weight:700; padding:2px 8px; border-radius:10px; }
+.cal-week-pct.hi  { background:#d1fae5; color:#065f46; }
+.cal-week-pct.mid { background:#fef3c7; color:#92400e; }
+.cal-week-pct.lo  { background:#fee2e2; color:#991b1b; }
+
+/* Student search */
+.cal-student-panel { margin-top:14px; border:1.5px solid #e2e8f0; border-radius:12px; overflow:hidden; display:none; }
+.cal-stu-timeline  { display:flex; gap:3px; flex-wrap:wrap; margin-top:4px; }
+.cal-stu-day-dot   { width:20px; height:20px; border-radius:6px; font-size:.65rem; font-weight:700; display:flex; align-items:center; justify-content:center; cursor:pointer; }
+
+/* Consecutive absence highlight */
+.cal-cell.streak3 { box-shadow: inset 0 0 0 2px #ef4444; }
+
+/* Note badge */
+.cal-note-badge { font-size:.6rem; background:#fef9c3; color:#854d0e; border-radius:6px; padding:1px 5px; margin-top:2px; display:inline-block; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+
 /* Holiday cells */
 .cal-cell.holiday { background:#f1f5f9;border-color:#cbd5e1;cursor:default; }
 .cal-cell.holiday:hover { transform:none;box-shadow:none;border-color:#cbd5e1; }
@@ -455,17 +473,29 @@ body { font-family: 'Prompt', sans-serif; background: var(--bg); color: var(--te
         </div>
       </div>
 
-      <!-- Legend -->
-      <div class="d-flex gap-3 mb-3 flex-wrap" style="font-size:.8rem;">
-        <span><span class="cal-dot" style="background:#22c55e;"></span> มาเรียน</span>
-        <span><span class="cal-dot" style="background:#ef4444;"></span> ขาด</span>
-        <span><span class="cal-dot" style="background:#f59e0b;"></span> ลา</span>
-        <span><span class="cal-dot" style="background:#818cf8;"></span> สาย</span>
-        <span><span class="cal-dot" style="background:#e2e8f0;"></span> ยังไม่เช็ค</span>
+      <!-- Legend + Search toggle -->
+      <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+        <div class="d-flex gap-3 flex-wrap" style="font-size:.8rem;">
+          <span><span class="cal-dot" style="background:#22c55e;"></span> มาเรียน</span>
+          <span><span class="cal-dot" style="background:#ef4444;"></span> ขาด</span>
+          <span><span class="cal-dot" style="background:#f59e0b;"></span> ลา</span>
+          <span><span class="cal-dot" style="background:#818cf8;"></span> สาย</span>
+          <span><span class="cal-dot" style="background:#e2e8f0;"></span> ยังไม่เช็ค</span>
+        </div>
+        <button class="nav-btn" onclick="toggleStudentPanel()" id="btnStudentPanel" style="font-size:.82rem;padding:5px 12px;">🔍 ดูรายคน</button>
       </div>
 
       <!-- Calendar Grid -->
       <div id="calGrid" class="cal-grid"></div>
+
+      <!-- Student timeline panel -->
+      <div class="cal-student-panel" id="calStudentPanel">
+        <div style="padding:12px 14px;background:#f8fafc;border-bottom:1px solid #e2e8f0;display:flex;gap:8px;align-items:center;">
+          <input type="text" id="calStudentSearch" placeholder="🔍 ค้นหาชื่อนักเรียน..." class="form-control" style="max-width:260px;font-family:inherit;" oninput="renderStudentTimeline()">
+          <span id="calStuStreak" style="font-size:.82rem;color:#ef4444;"></span>
+        </div>
+        <div id="calStudentTimeline" style="padding:12px 14px;max-height:340px;overflow-y:auto;"></div>
+      </div>
     </div>
   </div>
 </div>
@@ -509,12 +539,13 @@ body { font-family: 'Prompt', sans-serif; background: var(--bg); color: var(--te
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body p-0">
-        <!-- Quick buttons -->
-        <div class="d-flex gap-2 p-3 border-bottom flex-wrap">
+        <!-- Quick buttons + day note -->
+        <div class="d-flex gap-2 p-3 border-bottom flex-wrap align-items-center">
           <button class="quick-btn present" onclick="calSetAll('ม')">✅ ทุกคนมา</button>
           <button class="quick-btn absent"  onclick="calSetAll('ข')">❌ ทุกคนขาด</button>
           <button class="quick-btn leave"   onclick="calSetAll('ล')">📋 ทุกคนลา</button>
           <button class="quick-btn late"    onclick="calSetAll('ส')">⏰ ทุกคนสาย</button>
+          <input type="text" id="calDayNote" placeholder="📝 หมายเหตุวันนี้ เช่น สอบ, ทัศนศึกษา" class="form-control ms-auto" style="max-width:220px;font-size:.82rem;font-family:inherit;">
         </div>
         <!-- Student list -->
         <div id="calDayStudents" style="max-height:420px;overflow-y:auto;"></div>
@@ -1525,6 +1556,90 @@ function buildPrintPage({school,cls,currentYear,printDate,title,subTitle,orienta
   </body></html>`;
 }
 
+// =============================================
+// Student Timeline Panel
+// =============================================
+function toggleStudentPanel() {
+  const panel = document.getElementById('calStudentPanel');
+  const isVisible = panel.style.display==='block';
+  panel.style.display = isVisible?'none':'block';
+  document.getElementById('btnStudentPanel').textContent = isVisible?'🔍 ดูรายคน':'✕ ปิด';
+  if (!isVisible) renderStudentTimeline();
+}
+
+function renderStudentTimeline() {
+  const panel = document.getElementById('calStudentTimeline');
+  if (!panel || document.getElementById('calStudentPanel').style.display!=='block') return;
+
+  const q = (document.getElementById('calStudentSearch').value||'').toLowerCase();
+  const filtered = q ? calStudents.filter(s=>s.name.toLowerCase().includes(q)||s.studentId.includes(q)) : calStudents;
+
+  if (!filtered.length) { panel.innerHTML='<div class="text-muted" style="font-size:.85rem;">ไม่พบนักเรียน</div>'; return; }
+
+  const daysInMonth = new Date(calYear-543, calMonth, 0).getDate();
+  const allDates    = [];
+  for (let d=1; d<=daysInMonth; d++) allDates.push(pad(d)+'/'+pad(calMonth)+'/'+calYear);
+
+  // วันเรียนจริง (ไม่หยุด)
+  const schoolDates = allDates.filter(ds=>!calHolidays[ds]||calHolidays[ds].type!=='holiday');
+
+  const colorsMap = {'ม':'#22c55e','ข':'#ef4444','ล':'#f59e0b','ส':'#818cf8','':''};
+  const bgMap     = {'ม':'#d1fae5','ข':'#fee2e2','ล':'#fef3c7','ส':'#e0e7ff','':'#f1f5f9'};
+
+  // หา streak ด้วย
+  const streakMap = calcStreakMap();
+
+  let streakAlerts = [];
+
+  panel.innerHTML = filtered.map(s => {
+    let p=0,a=0,total=0;
+    let maxStreak=0, curStreak=0;
+
+    const dots = schoolDates.map(ds => {
+      const hol = calHolidays[ds];
+      if (hol?.type==='holiday') return `<div class="cal-stu-day-dot" style="background:#e2e8f0;color:#94a3b8;" title="${ds}">-</div>`;
+      const v = (calDayData[ds]||{})[s.studentId]||'';
+      if(v==='ม'){p++;total++;}
+      else if(v==='ข'){a++;total++;curStreak++;maxStreak=Math.max(maxStreak,curStreak);}
+      else if(v){total();curStreak=0;}
+      else curStreak=0;
+      const bg  = bgMap[v]||'#f8fafc';
+      const clr = colorsMap[v]||'#9ca3af';
+      const ring = streakMap[ds]&&v==='ข'?' outline:2px solid #ef4444;':' ';
+      return `<div class="cal-stu-day-dot" style="background:${bg};color:${clr};${ring}" title="${ds}: ${v||'ยังไม่เช็ค'}" onclick="openCalDay('${ds}')">${v||'?'}</div>`;
+    }).join('');
+
+    const pct  = total?Math.round(p/total*100):0;
+    const pctColor = pct<80?'#dc2626':'#16a34a';
+    const streakBadge = maxStreak>=3 ? `<span style="font-size:.7rem;background:#fee2e2;color:#991b1b;border-radius:8px;padding:1px 6px;margin-left:6px;">⚠️ ขาด ${maxStreak} วันติด</span>` : '';
+
+    return `<div style="margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid #f1f5f9;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+        <span style="font-size:.88rem;font-weight:600;">${s.name}</span>
+        <span style="font-size:.75rem;color:${pctColor};font-weight:700;">${pct}%</span>
+        <span style="font-size:.75rem;color:#94a3b8;">มา ${p} / ขาด ${a}</span>
+        ${streakBadge}
+      </div>
+      <div class="cal-stu-timeline">${dots}</div>
+    </div>`;
+  }).join('');
+
+  // แสดง streak alert สรุป
+  const streakStudents = filtered.filter(s => {
+    let run=0, max=0;
+    const daysInM = new Date(calYear-543,calMonth,0).getDate();
+    for(let d=1;d<=daysInM;d++){
+      const ds=pad(d)+'/'+pad(calMonth)+'/'+calYear;
+      if(calHolidays[ds]?.type==='holiday'){run=0;continue;}
+      const v=(calDayData[ds]||{})[s.studentId]||'';
+      if(v==='ข'){run++;max=Math.max(max,run);}else run=0;
+    }
+    return max>=3;
+  });
+  document.getElementById('calStuStreak').textContent =
+    streakStudents.length ? `⚠️ ขาดติดต่อกัน ≥3 วัน: ${streakStudents.map(s=>s.name).join(', ')}` : '';
+}
+
 function openPrint(html) {
   const w = window.open('','_blank');
   if (!w) { showToast('กรุณาอนุญาต Popup ในเบราว์เซอร์','error'); return; }
@@ -1545,6 +1660,7 @@ let calEditAtt   = {};
 let calModalInst = null;
 let calHolModalInst = null;
 let calHolEditDate  = '';
+let calDayNotes    = {};   // date → note string
 
 const THAI_MONTHS_CAL = ['','มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน',
                           'กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
@@ -1609,6 +1725,12 @@ async function loadCalendarData() {
     calHolidays = {};
     (holidays||[]).forEach(h => { calHolidays[h.date] = h; });
 
+    // โหลด day notes จาก localStorage (client-side เก็บไว้เอง)
+    try {
+      const stored = sessionStorage.getItem('calNotes_'+currentYear+'_'+calMonth);
+      calDayNotes = stored ? JSON.parse(stored) : {};
+    } catch(e) { calDayNotes={}; }
+
     renderCalendar();
   } catch(e) {
     showToast('โหลดปฏิทินไม่สำเร็จ: ' + e.message, 'error');
@@ -1616,95 +1738,163 @@ async function loadCalendarData() {
   hideProgress();
 }
 
+// คำนวณ streak ขาดติดต่อกัน (ทุกนักเรียนทุกวัน)
+function calcStreakMap() {
+  // streakMap[dateStr] = true ถ้าวันนี้มีนักเรียนขาด ≥3 วันติดกัน
+  const streaks = {};
+  if (!calStudents.length) return streaks;
+  const daysInMonth = new Date(calYear-543, calMonth, 0).getDate();
+
+  calStudents.forEach(s => {
+    let run = 0;
+    for (let d=1; d<=daysInMonth; d++) {
+      const ds = pad(d)+'/'+pad(calMonth)+'/'+calYear;
+      const hol = calHolidays[ds];
+      if (hol && hol.type==='holiday') { run=0; continue; }
+      const v = (calDayData[ds]||{})[s.studentId]||'';
+      if (v==='ข') {
+        run++;
+        if (run>=3) {
+          // มาร์คทุกวันที่อยู่ใน streak
+          for (let back=0; back<run; back++) {
+            const bd = pad(d-back)+'/'+pad(calMonth)+'/'+calYear;
+            streaks[bd] = true;
+          }
+        }
+      } else { run=0; }
+    }
+  });
+  return streaks;
+}
+
+// คำนวณ % มาเรียนรายสัปดาห์
+function calcWeekPct(weekDates) {
+  let total=0, present=0;
+  weekDates.forEach(ds => {
+    if (calHolidays[ds]?.type==='holiday') return;
+    const dayAtt = calDayData[ds];
+    if (!dayAtt) return;
+    calStudents.forEach(s => {
+      total++;
+      if ((dayAtt[s.studentId]||'')==='ม') present++;
+    });
+  });
+  if (!total) return null;
+  return Math.round(present/total*100);
+}
+
 function renderCalendar() {
   const cls = document.getElementById('calClassroom').value;
   document.getElementById('calMonthLabel').textContent = `${THAI_MONTHS_CAL[calMonth]} ${calYear}`;
 
-  // หาวันแรกของเดือน (แปลง พ.ศ. → ค.ศ.)
-  const firstDay = new Date(calYear - 543, calMonth - 1, 1);
-  const daysInMonth = new Date(calYear - 543, calMonth, 0).getDate();
-  const startDow = firstDay.getDay(); // 0=อา
-
-  // วันนี้
-  const now = new Date();
-  const todayStr = pad(now.getDate())+'/'+pad(now.getMonth()+1)+'/'+(now.getFullYear()+543);
+  const firstDay   = new Date(calYear-543, calMonth-1, 1);
+  const daysInMonth= new Date(calYear-543, calMonth, 0).getDate();
+  const startDow   = firstDay.getDay();
+  const now        = new Date();
+  const todayStr   = pad(now.getDate())+'/'+pad(now.getMonth()+1)+'/'+(now.getFullYear()+543);
+  const streakMap  = calcStreakMap();
 
   let html = '';
-  // หัว
   DAY_NAMES.forEach(n => { html += `<div class="cal-day-name">${n}</div>`; });
 
-  // Empty cells ก่อนวันที่ 1
+  // วนสร้างเซลล์ + เพิ่ม week bar ทุกสิ้นสัปดาห์
+  let cellsInRow = startDow; // นับตั้งแต่ empty cells แรก
   for (let i=0; i<startDow; i++) html += `<div class="cal-cell empty"></div>`;
 
-  for (let d=1; d<=daysInMonth; d++) {
-    const dateStr = pad(d)+'/'+pad(calMonth)+'/'+calYear;
-    const isToday   = dateStr === todayStr;
-    const isWeekend = ((startDow+d-1)%7 === 0 || (startDow+d-1)%7 === 6);
-    const isFuture  = false; // อนุญาตให้เช็คและแก้ไขได้ทุกวัน
-    const dayAtt    = calDayData[dateStr] || null;
-    const hasData   = dayAtt && Object.keys(dayAtt).length > 0;
+  let weekDates = [];
 
-    // นับสถิติ
+  for (let d=1; d<=daysInMonth; d++) {
+    const dateStr  = pad(d)+'/'+pad(calMonth)+'/'+calYear;
+    const dow      = (startDow+d-1)%7; // 0=อา
+    const isToday  = dateStr===todayStr;
+    const isWeekend= (dow===0||dow===6);
+    const dayAtt   = calDayData[dateStr]||null;
+    const hasData  = dayAtt && Object.keys(dayAtt).length>0;
+
+    weekDates.push(dateStr);
+    cellsInRow++;
+
+    // สถิติ
     let cntM=0,cntK=0,cntL=0,cntS=0,cntNone=0;
     if (hasData) {
       calStudents.forEach(s => {
-        const v = dayAtt[s.studentId]||'';
-        if(v==='ม')cntM++; else if(v==='ข')cntK++; else if(v==='ล')cntL++; else if(v==='ส')cntS++; else cntNone++;
+        const v=(dayAtt[s.studentId]||'');
+        if(v==='ม')cntM++;else if(v==='ข')cntK++;else if(v==='ล')cntL++;else if(v==='ส')cntS++;else cntNone++;
       });
     }
 
-    // ตรวจสอบวันหยุด
-    const holInfo   = calHolidays[dateStr] || null;
-    const isHoliday = holInfo && holInfo.type === 'holiday';
-    const isMakeup  = holInfo && holInfo.type === 'makeup';
+    const holInfo  = calHolidays[dateStr]||null;
+    const isHoliday= holInfo?.type==='holiday';
+    const isMakeup = holInfo?.type==='makeup';
+    const hasStreak= streakMap[dateStr];
 
-    // สร้าง dots
-    let dotsHtml = '';
-    if (hasData && !isHoliday) {
-      if(cntM)  dotsHtml += `<div class="cal-dot-sm" style="background:#22c55e;" title="มา ${cntM}"></div>`.repeat(Math.min(cntM,5));
-      if(cntK)  dotsHtml += `<div class="cal-dot-sm" style="background:#ef4444;" title="ขาด ${cntK}"></div>`.repeat(Math.min(cntK,5));
-      if(cntL)  dotsHtml += `<div class="cal-dot-sm" style="background:#f59e0b;" title="ลา ${cntL}"></div>`.repeat(Math.min(cntL,5));
-      if(cntS)  dotsHtml += `<div class="cal-dot-sm" style="background:#818cf8;" title="สาย ${cntS}"></div>`.repeat(Math.min(cntS,5));
+    // dots
+    let dotsHtml='';
+    if (hasData&&!isHoliday) {
+      if(cntM) dotsHtml+=`<div class="cal-dot-sm" style="background:#22c55e;"></div>`.repeat(Math.min(cntM,4));
+      if(cntK) dotsHtml+=`<div class="cal-dot-sm" style="background:#ef4444;"></div>`.repeat(Math.min(cntK,4));
+      if(cntL) dotsHtml+=`<div class="cal-dot-sm" style="background:#f59e0b;"></div>`.repeat(Math.min(cntL,4));
+      if(cntS) dotsHtml+=`<div class="cal-dot-sm" style="background:#818cf8;"></div>`.repeat(Math.min(cntS,4));
     }
 
-    // content ในเซลล์
-    let cellContent = '';
+    // note badge
+    const dayNote = calDayNotes[dateStr]||'';
+    const noteBadge = dayNote ? `<div class="cal-note-badge" title="${dayNote}">📝 ${dayNote}</div>` : '';
+
+    // cell content
+    let cellContent='';
     if (isHoliday) {
-      cellContent = `<div class="cal-badge holiday">🚫 หยุด</div>${holInfo.note?`<div class="cal-summary">${holInfo.note}</div>`:''}`;
+      cellContent=`<div class="cal-badge holiday">🚫 หยุด</div>${holInfo.note?`<div class="cal-summary">${holInfo.note}</div>`:''}`;
     } else if (isMakeup) {
-      cellContent = `<div class="cal-badge makeup">📚 ชดเชย</div>${holInfo.note?`<div class="cal-summary">${holInfo.note}</div>`:''}`;
-      if (hasData) cellContent += `<div class="cal-dots">${dotsHtml}</div>`;
+      cellContent=`<div class="cal-badge makeup">📚 ชดเชย</div>${holInfo.note?`<div class="cal-summary">${holInfo.note}</div>`:''}`;
+      if(hasData) cellContent+=`<div class="cal-dots">${dotsHtml}</div>`;
     } else if (hasData) {
-      const parts = [];
+      const parts=[];
       if(cntM) parts.push(`<span style="color:#16a34a;">ม${cntM}</span>`);
       if(cntK) parts.push(`<span style="color:#dc2626;">ข${cntK}</span>`);
       if(cntL) parts.push(`<span style="color:#d97706;">ล${cntL}</span>`);
       if(cntS) parts.push(`<span style="color:#6366f1;">ส${cntS}</span>`);
       if(cntNone) parts.push(`<span style="color:#94a3b8;">?${cntNone}</span>`);
-      cellContent = `<div class="cal-dots">${dotsHtml}</div><div class="cal-summary">${parts.join(' ')}</div>`;
+      cellContent=`<div class="cal-dots">${dotsHtml}</div><div class="cal-summary">${parts.join(' ')}</div>`;
     } else {
-      cellContent = `<div class="cal-no-data">ยังไม่เช็ค</div>`;
+      cellContent=`<div class="cal-no-data">ยังไม่เช็ค</div>`;
     }
 
-    // ปุ่มมาร์ควันหยุด (ทุกคนทำได้)
-    const holBtn = `<button class="cal-holiday-btn" onclick="event.stopPropagation();openHolidayModal('${dateStr}')" title="ตั้งค่าวันหยุด/ชดเชย">⚙️</button>`;
-
-    // คลิกเปิดเช็คชื่อ (ยกเว้นวันหยุด)
-    const clickable = isHoliday ? '' : `onclick="openCalDay('${dateStr}')"`;
-    const cellClass = ['cal-cell',
+    const holBtn=`<button class="cal-holiday-btn" onclick="event.stopPropagation();openHolidayModal('${dateStr}')" title="วันหยุด/ชดเชย">⚙️</button>`;
+    const clickable=isHoliday?'':`onclick="openCalDay('${dateStr}')"`;
+    const cellClass=['cal-cell',
       isToday?'today':'', isWeekend&&!isMakeup?'weekend':'',
       hasData&&!isHoliday?'has-data':'',
-      isHoliday?'holiday':'', isMakeup?'makeup':''
+      isHoliday?'holiday':'', isMakeup?'makeup':'',
+      hasStreak?'streak3':''
     ].filter(Boolean).join(' ');
 
-    html += `<div class="${cellClass}" ${clickable}>
+    html+=`<div class="${cellClass}" ${clickable}>
       ${holBtn}
       <div class="cal-date ${isToday?'today-num':''}">${d}${isToday?' <span style="font-size:.6rem;color:#0ea5e9;">วันนี้</span>':''}</div>
-      ${cellContent}
+      ${cellContent}${noteBadge}
     </div>`;
+
+    // week bar สิ้นสัปดาห์ (เสาร์) หรือวันสุดท้ายของเดือน
+    if (dow===6 || d===daysInMonth) {
+      const pct = calcWeekPct(weekDates);
+      if (pct!==null) {
+        const cls2 = pct>=80?'hi':pct>=60?'mid':'lo';
+        // fill empty cells ท้ายสัปดาห์ถ้าจำเป็น
+        const remain = 7 - (cellsInRow%7===0?7:cellsInRow%7);
+        if (d===daysInMonth && remain<7) {
+          for(let i=0;i<remain;i++) html+=`<div class="cal-cell empty"></div>`;
+          cellsInRow+=remain;
+        }
+        html+=`<div class="cal-week-bar" style="grid-column:span 7;"><span class="cal-week-pct ${cls2}">สัปดาห์นี้ ${pct}%</span></div>`;
+      }
+      weekDates=[];
+      cellsInRow=0;
+    }
   }
 
   document.getElementById('calGrid').innerHTML = html;
+  renderStudentTimeline();
 }
 
 // ==========================================
@@ -1774,6 +1964,7 @@ function openCalDay(dateStr) {
   document.getElementById('calDayModalTitle').textContent =
     `วัน${dowNames[dow]}ที่ ${parseInt(p[0])} ${THAI_MONTHS_CAL[parseInt(p[1])]} ${p[2]}`;
 
+  document.getElementById('calDayNote').value = calDayNotes[dateStr]||'';
   renderCalDayStudents();
 
   calModalInst = new bootstrap.Modal(document.getElementById('calDayModal'));
@@ -1834,6 +2025,15 @@ async function calSaveDay() {
     // อัปเดต calDayData ใน memory
     calDayData[calEditDate] = {};
     records.forEach(r => { calDayData[calEditDate][r.studentId] = r.status; });
+
+    // บันทึก note
+    const note = document.getElementById('calDayNote').value.trim();
+    if (note) {
+      calDayNotes[calEditDate] = note;
+    } else {
+      delete calDayNotes[calEditDate];
+    }
+    try { sessionStorage.setItem('calNotes_'+currentYear+'_'+calMonth, JSON.stringify(calDayNotes)); } catch(e){}
 
     calModalInst?.hide();
     renderCalendar();
