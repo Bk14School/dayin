@@ -1776,99 +1776,197 @@ function printCalMonth() {
 function printCalStudent() {
   if (!calStudents.length) { showToast('ยังไม่มีข้อมูล กรุณาโหลดปฏิทินก่อน','error'); return; }
 
-  const cls      = document.getElementById('calClassroom').value;
-  const school   = document.getElementById('loginSchoolName')?.textContent || 'โรงเรียนบ้านคลอง 14';
-  const printDate= new Date().toLocaleDateString('th-TH',{year:'numeric',month:'long',day:'numeric'});
-  const THAI_M   = ['','มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
-  const DOW_TH   = ['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัสบดี','ศุกร์','เสาร์'];
+  const cls       = document.getElementById('calClassroom').value;
+  const school    = 'โรงเรียนบ้านคลอง 14';
+  const printDate = new Date().toLocaleDateString('th-TH',{year:'numeric',month:'long',day:'numeric'});
+  const THAI_M    = ['','มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+  const DOW_TH    = ['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัสบดี','ศุกร์','เสาร์'];
 
   const daysInMonth = new Date(calYear-543, calMonth, 0).getDate();
-  const schoolDates = [];
+  const allDates=[], schoolDates=[];
   for (let d=1; d<=daysInMonth; d++) {
     const ds=pad(d)+'/'+pad(calMonth)+'/'+calYear;
-    if (calHolidays[ds]?.type==='holiday') continue;
-    schoolDates.push(ds);
+    allDates.push(ds);
+    if (calHolidays[ds]?.type !== 'holiday') schoolDates.push(ds);
   }
+  const totalSchoolDays = schoolDates.length;
 
-  const stuCards = calStudents.map((s,idx)=>{
-    let p=0,a=0,l=0,la=0;
-    const absentDates=[], lateDates=[];
+  const pages = calStudents.map((s, idx) => {
+    let p=0, a=0, l=0, la=0;
+    const absentDates=[], lateDates=[], leaveDates=[];
 
-    const rows = schoolDates.map(ds=>{
-      const dparts=ds.split('/');
-      const dow=new Date(parseInt(dparts[2])-543,parseInt(dparts[1])-1,parseInt(dparts[0])).getDay();
-      const v=(calDayData[ds]||{})[s.studentId]||'-';
-      if(v==='ม')p++;else if(v==='ข'){a++;absentDates.push(`${parseInt(dparts[0])} ${THAI_M[calMonth].substring(0,3)}.`);}
-      else if(v==='ล')l++;else if(v==='ส'){la++;lateDates.push(`${parseInt(dparts[0])} ${THAI_M[calMonth].substring(0,3)}.`);}
-      const bg=v==='ม'?'#d1fae5':v==='ข'?'#fee2e2':v==='ล'?'#fef3c7':v==='ส'?'#e0e7ff':'#f8fafc';
-      const fg=v==='ม'?'#065f46':v==='ข'?'#991b1b':v==='ล'?'#92400e':v==='ส'?'#3730a3':'#9ca3af';
-      return `<tr>
-        <td style="font-size:10px;color:#555;">${DOW_TH[dow]}ที่ ${parseInt(dparts[0])}</td>
-        <td style="text-align:center;background:${bg};color:${fg};font-weight:700;font-size:11px;">${v}</td>
-      </tr>`;
-    }).join('');
+    // สร้างแถวตาราง 2 คอลัมน์
+    const half = Math.ceil(allDates.length / 2);
+    const col1 = allDates.slice(0, half);
+    const col2 = allDates.slice(half);
 
-    const pct=schoolDates.length?Math.round(p/schoolDates.length*100):0;
-    const pctColor=pct<80?'#991b1b':'#065f46';
+    function makeCell(ds) {
+      if (!ds) return '<td colspan="3" style="border:none;background:#fff;"></td>';
+      const dp = ds.split('/');
+      const dow = new Date(parseInt(dp[2])-543, parseInt(dp[1])-1, parseInt(dp[0])).getDay();
+      const hol = calHolidays[ds];
+      if (hol?.type === 'holiday') {
+        return `<td style="font-size:9px;color:#94a3b8;padding:2px 5px;">${DOW_TH[dow]}ที่ ${parseInt(dp[0])}</td>
+                <td colspan="2" style="text-align:center;font-size:9px;color:#94a3b8;background:#f8fafc;padding:2px 5px;">🚫 ${hol.note||'หยุดพิเศษ'}</td>`;
+      }
+      const v = (calDayData[ds]||{})[s.studentId]||'';
+      if(v==='ม'){p++;}
+      else if(v==='ข'){a++;absentDates.push(parseInt(dp[0]));}
+      else if(v==='ล'){l++;leaveDates.push(parseInt(dp[0]));}
+      else if(v==='ส'){la++;lateDates.push(parseInt(dp[0]));}
+      const bg = v==='ม'?'#d1fae5':v==='ข'?'#fee2e2':v==='ล'?'#fef3c7':v==='ส'?'#e0e7ff':'#f8fafc';
+      const fg = v==='ม'?'#065f46':v==='ข'?'#991b1b':v==='ล'?'#92400e':v==='ส'?'#3730a3':'#9ca3af';
+      const lbl= v==='ม'?'มาเรียน':v==='ข'?'ขาดเรียน':v==='ล'?'ลา':v==='ส'?'มาสาย':'ยังไม่บันทึก';
+      return `<td style="font-size:9.5px;color:#374151;white-space:nowrap;padding:2px 5px;">${DOW_TH[dow]}ที่ ${parseInt(dp[0])}</td>
+              <td style="text-align:center;background:${bg};color:${fg};font-weight:800;font-size:12px;width:26px;padding:2px;">${v||'-'}</td>
+              <td style="font-size:9px;color:${fg};padding:2px 5px;">${lbl}</td>`;
+    }
 
-    return `<div class="stu-card">
-      <div class="stu-header">
-        <div>
-          <div class="stu-name">${idx+1}. ${s.name}</div>
-          <div class="stu-id">รหัส: ${s.studentId} | ชั้น ${cls}</div>
+    const maxR = Math.max(col1.length, col2.length);
+    let tableRows = '';
+    for (let i=0; i<maxR; i++) {
+      tableRows += `<tr>${makeCell(col1[i])}<td style="width:8px;border:none;background:#f0f9ff;"></td>${makeCell(col2[i])}</tr>`;
+    }
+
+    const pct = totalSchoolDays ? Math.round(p/totalSchoolDays*100) : 0;
+    const pctColor = pct>=80?'#065f46':pct>=60?'#92400e':'#991b1b';
+    const pctBg    = pct>=80?'#d1fae5':pct>=60?'#fef3c7':'#fee2e2';
+    const pctLabel = pct>=80?'✅ ผ่านเกณฑ์':'⚠️ ต่ำกว่าเกณฑ์';
+
+    let maxStreak=0, curStreak=0;
+    allDates.forEach(ds => {
+      if (calHolidays[ds]?.type==='holiday') { curStreak=0; return; }
+      const v = (calDayData[ds]||{})[s.studentId]||'';
+      if (v==='ข') { curStreak++; maxStreak=Math.max(maxStreak,curStreak); }
+      else curStreak=0;
+    });
+
+    // สร้าง progress bar
+    const barW = Math.max(0, Math.min(100, pct));
+
+    return `<div class="page">
+      <div class="pg-header">
+        <div style="flex:1;">
+          <div class="pg-school">${school}</div>
+          <div class="pg-sub">รายงานการเข้าเรียนรายบุคคล — ${THAI_M[calMonth]} ${calYear}</div>
+          <div class="pg-meta">ชั้น ${cls} | ปีการศึกษา ${currentYear} | พิมพ์วันที่ ${printDate}</div>
         </div>
-        <div style="text-align:right;">
-          <div style="font-size:20px;font-weight:800;color:${pctColor};">${pct}%</div>
-          <div style="font-size:9px;color:#6b7280;">มาเรียน</div>
+        <div class="pg-page-num">หน้า ${idx+1}/${calStudents.length}</div>
+      </div>
+
+      <div class="stu-bar">
+        <div class="stu-avatar">${idx+1}</div>
+        <div class="stu-info">
+          <div class="stu-name-lg">${s.name}</div>
+          <div class="stu-meta">รหัสนักเรียน: ${s.studentId} &nbsp;|&nbsp; ชั้น ${cls}</div>
+        </div>
+        <div class="pct-badge" style="background:${pctBg};color:${pctColor};">
+          <div class="pct-num">${pct}%</div>
+          <div class="pct-label">${pctLabel}</div>
         </div>
       </div>
-      <div class="stu-stats">
-        <span class="stat-pill present">✅ มา ${p}</span>
-        <span class="stat-pill absent">❌ ขาด ${a}</span>
-        <span class="stat-pill leave">📋 ลา ${l}</span>
-        <span class="stat-pill late">⏰ สาย ${la}</span>
+
+      <!-- Progress bar -->
+      <div style="height:8px;background:#e2e8f0;border-radius:99px;margin-bottom:10px;overflow:hidden;">
+        <div style="height:100%;width:${barW}%;background:${pctColor};border-radius:99px;transition:width .3s;"></div>
       </div>
-      ${absentDates.length?`<div class="absence-note">วันขาด: ${absentDates.join(', ')}</div>`:''}
-      ${lateDates.length?`<div class="absence-note" style="color:#92400e;">วันสาย: ${lateDates.join(', ')}</div>`:''}
-      <table class="day-table"><tbody>${rows}</tbody></table>
+
+      <div class="kpi-row">
+        <div class="kpi present"><div class="kpi-num">${p}</div><div class="kpi-label">✅ มาเรียน</div></div>
+        <div class="kpi absent"><div class="kpi-num">${a}</div><div class="kpi-label">❌ ขาดเรียน</div></div>
+        <div class="kpi leave"><div class="kpi-num">${l}</div><div class="kpi-label">📋 ลา</div></div>
+        <div class="kpi late"><div class="kpi-num">${la}</div><div class="kpi-label">⏰ มาสาย</div></div>
+        <div class="kpi total"><div class="kpi-num">${totalSchoolDays}</div><div class="kpi-label">📅 วันเรียน/เดือน</div></div>
+      </div>
+
+      <div class="summary-notes">
+        ${absentDates.length
+          ? `<div class="note-row absent"><b>📌 วันที่ขาดเรียน (${absentDates.length} วัน):</b> ${absentDates.map(d=>`${d} ${THAI_M[calMonth].slice(0,3)}.`).join('  •  ')}</div>`
+          : '<div class="note-row ok">✅ ไม่มีวันขาดเรียนในเดือนนี้</div>'}
+        ${leaveDates.length ? `<div class="note-row leave"><b>📋 วันที่ลา (${leaveDates.length} วัน):</b> ${leaveDates.map(d=>`${d} ${THAI_M[calMonth].slice(0,3)}.`).join('  •  ')}</div>` : ''}
+        ${lateDates.length  ? `<div class="note-row late"><b>⏰ วันที่มาสาย (${lateDates.length} วัน):</b> ${lateDates.map(d=>`${d} ${THAI_M[calMonth].slice(0,3)}.`).join('  •  ')}</div>` : ''}
+        ${maxStreak>=3 ? `<div class="note-row streak">⚠️ ขาดเรียนติดต่อกันสูงสุด <b>${maxStreak} วัน</b> — ควรติดตามผู้ปกครอง</div>` : ''}
+      </div>
+
+      <div class="day-section-title">บันทึกการเข้าเรียนรายวัน (${THAI_M[calMonth]} ${calYear} — ${daysInMonth} วัน, วันเรียน ${totalSchoolDays} วัน)</div>
+      <table class="pair-table">
+        <thead>
+          <tr>
+            <th colspan="3" style="background:#0ea5e9;color:#fff;text-align:center;">ครึ่งแรก (วันที่ 1–${col1.length})</th>
+            <th style="background:#f0f9ff;border:none;width:8px;"></th>
+            <th colspan="3" style="background:#0ea5e9;color:#fff;text-align:center;">ครึ่งหลัง (วันที่ ${col1.length+1}–${daysInMonth})</th>
+          </tr>
+          <tr>
+            <th>วัน</th><th>สถานะ</th><th>หมายเหตุ</th>
+            <th style="background:#f0f9ff;border:none;"></th>
+            <th>วัน</th><th>สถานะ</th><th>หมายเหตุ</th>
+          </tr>
+        </thead>
+        <tbody>${tableRows}</tbody>
+      </table>
+
+      <div class="sign-area">
+        <div class="sign-box"><div class="sign-line"></div>ครูผู้สอน / ครูประจำชั้น</div>
+        <div class="sign-box"><div class="sign-line"></div>ผู้ปกครอง (รับทราบ)</div>
+        <div class="sign-box"><div class="sign-line"></div>ผู้อำนวยการโรงเรียน</div>
+      </div>
     </div>`;
   }).join('');
 
   const html = `<!DOCTYPE html><html><head><meta charset="utf-8">
   <title>รายงานรายบุคคล ${cls} ${THAI_M[calMonth]} ${calYear}</title>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&display=swap');
-    @page { size: A4 portrait; margin: 10mm; }
-    *{box-sizing:border-box;}
-    body{font-family:'Sarabun',sans-serif;font-size:11px;margin:0;padding:0;color:#111;}
-    .page-title{text-align:center;margin-bottom:12px;}
-    .page-title h2{font-size:15px;font-weight:700;color:#1e3a5f;margin:0;}
-    .page-title p{font-size:11px;color:#555;margin:3px 0 0;}
-    .stamp{text-align:right;font-size:10px;color:#888;margin-bottom:10px;}
+    @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700;800&display=swap');
+    @page { size: A4 portrait; margin: 10mm 10mm 12mm; }
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{font-family:'Sarabun',sans-serif;font-size:11px;color:#111;}
+    .page{page-break-after:always;padding:0;}
+    .page:last-child{page-break-after:avoid;}
 
-    /* grid: 2 คน/แถว */
-    .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
-    .stu-card{border:1px solid #e2e8f0;border-radius:10px;padding:10px;break-inside:avoid;}
-    .stu-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;}
-    .stu-name{font-size:11px;font-weight:700;}
-    .stu-id{font-size:9px;color:#6b7280;margin-top:2px;}
-    .stu-stats{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:6px;}
-    .stat-pill{font-size:9px;padding:2px 6px;border-radius:8px;}
-    .stat-pill.present{background:#d1fae5;color:#065f46;}
-    .stat-pill.absent {background:#fee2e2;color:#991b1b;}
-    .stat-pill.leave  {background:#fef3c7;color:#92400e;}
-    .stat-pill.late   {background:#e0e7ff;color:#3730a3;}
-    .absence-note{font-size:9px;color:#991b1b;margin-bottom:4px;}
-    .day-table{width:100%;border-collapse:collapse;margin-top:4px;}
-    .day-table td{border:1px solid #f1f5f9;padding:2px 4px;font-size:9px;}
+    .pg-header{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2.5px solid #1e3a5f;padding-bottom:7px;margin-bottom:10px;}
+    .pg-school{font-size:15px;font-weight:800;color:#1e3a5f;}
+    .pg-sub{font-size:12px;font-weight:600;color:#374151;margin-top:2px;}
+    .pg-meta{font-size:9.5px;color:#6b7280;margin-top:2px;}
+    .pg-page-num{font-size:10px;color:#9ca3af;white-space:nowrap;padding-top:2px;}
+
+    .stu-bar{display:flex;align-items:center;gap:12px;background:#f8fafc;border-radius:10px;padding:10px 14px;margin-bottom:8px;border:1px solid #e2e8f0;}
+    .stu-avatar{width:40px;height:40px;border-radius:50%;background:#1e3a5f;color:#fff;font-size:16px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+    .stu-info{flex:1;}
+    .stu-name-lg{font-size:16px;font-weight:700;}
+    .stu-meta{font-size:10px;color:#6b7280;margin-top:2px;}
+    .pct-badge{text-align:center;padding:7px 16px;border-radius:10px;flex-shrink:0;}
+    .pct-num{font-size:24px;font-weight:800;line-height:1;}
+    .pct-label{font-size:9px;font-weight:600;margin-top:3px;}
+
+    .kpi-row{display:flex;gap:6px;margin-bottom:10px;}
+    .kpi{flex:1;text-align:center;border-radius:8px;padding:8px 4px;border:1px solid #e2e8f0;}
+    .kpi.present{background:#f0fdf4;border-color:#bbf7d0;}
+    .kpi.absent{background:#fff5f5;border-color:#fca5a5;}
+    .kpi.leave{background:#fffbeb;border-color:#fde68a;}
+    .kpi.late{background:#f5f3ff;border-color:#c4b5fd;}
+    .kpi.total{background:#f0f9ff;border-color:#bae6fd;}
+    .kpi-num{font-size:22px;font-weight:800;line-height:1;}
+    .kpi-label{font-size:9px;color:#6b7280;margin-top:3px;}
+
+    .summary-notes{margin-bottom:10px;display:flex;flex-direction:column;gap:4px;}
+    .note-row{font-size:10px;padding:5px 10px;border-radius:6px;line-height:1.5;}
+    .note-row.absent{background:#fee2e2;color:#991b1b;}
+    .note-row.leave{background:#fef3c7;color:#92400e;}
+    .note-row.late{background:#e0e7ff;color:#3730a3;}
+    .note-row.streak{background:#fff1f2;color:#be123c;border:1px solid #fda4af;}
+    .note-row.ok{background:#f0fdf4;color:#166534;}
+
+    .day-section-title{font-size:10.5px;font-weight:700;color:#374151;margin-bottom:5px;border-left:3px solid #0ea5e9;padding-left:7px;}
+    .pair-table{width:100%;border-collapse:collapse;}
+    .pair-table th{background:#1e3a5f;color:#fff;font-size:9px;padding:4px 5px;text-align:center;}
+    .pair-table td{border:1px solid #e2e8f0;vertical-align:middle;}
+
+    .sign-area{display:flex;justify-content:space-around;margin-top:12px;}
+    .sign-box{text-align:center;font-size:10px;}
+    .sign-line{border-bottom:1px solid #666;width:140px;margin:0 auto 4px;padding-top:22px;}
+
     @media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact;}}
-  </style></head><body>
-  <div class="stamp">พิมพ์วันที่ ${printDate}</div>
-  <div class="page-title">
-    <h2>${school}</h2>
-    <p>รายงานการเข้าเรียนรายบุคคล | ชั้น ${cls} | ${THAI_M[calMonth]} ${calYear} | ปีการศึกษา ${currentYear}</p>
-  </div>
-  <div class="grid">${stuCards}</div>
+  </style></head><body>${pages}
   <script>window.onload=()=>window.print();<\/script>
   </body></html>`;
 
