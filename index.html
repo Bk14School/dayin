@@ -698,14 +698,17 @@ body { font-family: 'Prompt', sans-serif; background: var(--bg); color: var(--te
           <button class="quick-btn sick"    onclick="calSetAll('ป')">🤒 ป่วย</button>
           <button class="quick-btn late"    onclick="calSetAll('ส')">⏰ สาย</button>
           <input type="text" id="calDayNote" placeholder="📝 หมายเหตุวันนี้ เช่น สอบ, ทัศนศึกษา" class="form-control ms-auto" style="max-width:220px;font-size:.82rem;font-family:inherit;">
+          <button class="btn btn-outline-danger btn-sm" onclick="clearCalNote()" title="ลบหมายเหตุ">🗑️</button>
+
         </div>
         <!-- Student list -->
         <div id="calDayStudents" style="max-height:420px;overflow-y:auto;"></div>
         <!-- Save bar -->
-        <div class="d-flex justify-content-between align-items-center p-3 border-top" style="background:#f8fafc;">
-          <span id="calDayChecked" style="font-size:.85rem;color:#6b7280;"></span>
-          <button class="btn-save" onclick="calSaveDay()" style="min-width:140px;">💾 บันทึก</button>
-        </div>
+      <div class="d-flex justify-content-between align-items-center p-3 border-top" style="background:#f8fafc;">
+  <button class="btn btn-outline-danger" onclick="clearFullDay()">ล้างข้อมูลทั้งวัน</button> <!-- ⭐️ ปุ่มใหม่ -->
+  <span id="calDayChecked"></span>
+  <button class="btn-save" onclick="calSaveDay()">💾 บันทึก</button>
+</div>
       </div>
     </div>
   </div>
@@ -2512,18 +2515,28 @@ function renderCalendar() {
       cellContent=`<div class="cal-no-data">ยังไม่เช็ค</div>`;
     }
 
-    const holBtn=`<button class="cal-holiday-btn" onclick="event.stopPropagation();openHolidayModal('${dateStr}')" title="วันหยุด/ชดเชย">⚙️</button>`;
-    const clickable=isHoliday?'':`onclick="openCalDay('${dateStr}')"`;
-    const cellClass=['cal-cell',
-      isToday?'today':'', isWeekend&&!isMakeup?'weekend':'',
-      hasData&&!isHoliday?'has-data':'',
-      isHoliday?'holiday':'', isMakeup?'makeup':'',
-      hasStreak?'streak3':''
+     const holBtn = `<button class="cal-holiday-btn" onclick="event.stopPropagation();openHolidayModal('${dateStr}')" title="วันหยุด/ชดเชย">⚙️</button>`;
+    
+    // เงื่อนไข: บันทึกได้ถ้า "ไม่ใช่วันหยุด" และ ("เป็นวันธรรมดา" หรือ "เป็นวันเรียนชดเชย")
+    const canEdit = !isHoliday && (!isWeekend || isMakeup);
+    
+    // กำหนด onClick ถ้าบันทึกได้ให้เปิดหน้าต่าง ถ้าบันทึกไม่ได้ให้แจ้งเตือน
+    const clickable = canEdit 
+        ? `onclick="openCalDay('${dateStr}')"` 
+        : `onclick="showToast('วันนี้เป็นวันหยุด ไม่สามารถบันทึกได้ (ยกเว้นตั้งค่าเป็นวันเรียนชดเชย)', 'error')"`;
+
+    const cellClass = ['cal-cell',
+      isToday ? 'today' : '',
+      isWeekend && !isMakeup ? 'weekend' : '', // วันเสาร์-อาทิตย์ปกติจะเป็นสีเทา
+      hasData && !isHoliday ? 'has-data' : '',
+      isHoliday ? 'holiday' : '',
+      isMakeup ? 'makeup' : '',
+      hasStreak ? 'streak3' : ''
     ].filter(Boolean).join(' ');
 
-    html+=`<div class="${cellClass}" ${clickable}>
+    html += `<div class="${cellClass}" ${clickable}>
       ${holBtn}
-      <div class="cal-date ${isToday?'today-num':''}">${d}${isToday?' <span style="font-size:.6rem;color:#0ea5e9;">วันนี้</span>':''}</div>
+      <div class="cal-date ${isToday ? 'today-num' : ''}">${d}${isToday ? ' <span style="font-size:.6rem;color:#0ea5e9;">วันนี้</span>' : ''}</div>
       ${cellContent}${noteBadge}
     </div>`;
 
@@ -2694,6 +2707,17 @@ async function calSaveDay() {
   }
   w.document.write(html);
   w.document.close();
+}
+
+  function clearCalNote() {
+  document.getElementById('calDayNote').value = '';
+  // ลบออกจากตัวแปรในเครื่อง
+  delete calDayNotes[calEditDate];
+  // อัปเดตลง SessionStorage
+  try { sessionStorage.setItem('calNotes_'+currentYear+'_'+calMonth, JSON.stringify(calDayNotes)); } catch(e){}
+  // ไม่ต้องบันทึก attendance ใหม่ แค่สั่ง render ปฏิทินใหม่เพื่อเอาป้าย note ออก
+  renderCalendar(); 
+  showToast('ลบหมายเหตุเรียบร้อย', 'info');
 }
 
 function printWarningLetter(studentId) {
