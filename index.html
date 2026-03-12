@@ -1809,6 +1809,10 @@ function renderCalendar() {
   const now        = new Date();
   const todayStr   = pad(now.getDate())+'/'+pad(now.getMonth()+1)+'/'+(now.getFullYear()+543);
   const streakMap  = calcStreakMap();
+  
+  // 🟢 ดึงข้อมูลเทอมมาใช้คำนวณ
+  const startD = parseThaiDate(termDates.start);
+  const endD = parseThaiDate(termDates.end);
 
   let html = '';
   DAY_NAMES.forEach(n => { html += `<div class="cal-day-name">${n}</div>`; });
@@ -1819,6 +1823,7 @@ function renderCalendar() {
   let weekDates =[];
 
   for (let d=1; d<=daysInMonth; d++) {
+    const dObj = new Date(calYear-543, calMonth-1, d); // สร้าง Date Object สำหรับวันนั้นๆ
     const dateStr  = pad(d)+'/'+pad(calMonth)+'/'+calYear;
     const dow      = (startDow+d-1)%7; 
     const isToday  = dateStr===todayStr;
@@ -1826,58 +1831,26 @@ function renderCalendar() {
     const dayAtt   = calDayData[dateStr]||null;
     const hasData  = dayAtt && Object.keys(dayAtt).length>0;
 
+    // 🟢 ตรวจสอบเงื่อนไขวันเปิด-ปิดเทอม
+    const isWithinTerm = (!startD || !endD) || (dObj >= startD && dObj <= endD);
+
     weekDates.push(dateStr);
     cellsInRow++;
 
-    let cntM=0,cntK=0,cntL=0,cntS=0,cntP=0,cntNone=0;
-    if (hasData) {
-      calStudents.forEach(s => {
-        const v=(dayAtt[s.studentId]||'');
-        if(v==='ม')cntM++;else if(v==='ข')cntK++;else if(v==='ล')cntL++;else if(v==='ส')cntS++;else if(v==='ป')cntP++;else cntNone++;
-      });
-    }
+    // ... (ส่วนการคำนวณจุดสีและ NoteBadge ของคุณ ให้คงเดิมไว้) ...
+    // [จุดที่ต้องเปลี่ยนคือตัวแปร canEdit]
 
     const holInfo  = calHolidays[dateStr]||null;
     const isHoliday= holInfo?.type==='holiday';
     const isMakeup = holInfo?.type==='makeup';
     const hasStreak= streakMap[dateStr];
 
-    let dotsHtml='';
-    if (hasData&&!isHoliday) {
-      if(cntM && currentFilters['ม']) dotsHtml+=`<div class="cal-dot-sm" style="background:#22c55e;"></div>`.repeat(Math.min(cntM,4));
-      if(cntK && currentFilters['ข']) dotsHtml+=`<div class="cal-dot-sm" style="background:#ef4444;"></div>`.repeat(Math.min(cntK,4));
-      if(cntL && currentFilters['ล']) dotsHtml+=`<div class="cal-dot-sm" style="background:#f59e0b;"></div>`.repeat(Math.min(cntL,4));
-      if(cntP && currentFilters['ป']) dotsHtml+=`<div class="cal-dot-sm" style="background:#be185d;"></div>`.repeat(Math.min(cntP,4));
-      if(cntS && currentFilters['ส']) dotsHtml+=`<div class="cal-dot-sm" style="background:#818cf8;"></div>`.repeat(Math.min(cntS,4));
-    }
-
-    const dayNote = calDayNotes[dateStr]||'';
-    const noteBadge = dayNote ? `<div class="cal-note-badge" title="${dayNote}">📝 ${dayNote}</div>` : '';
-
-    let cellContent='';
-    if (isHoliday) {
-      cellContent=`<div class="cal-badge holiday">🚫 หยุด</div>${holInfo.note?`<div class="cal-summary">${holInfo.note}</div>`:''}`;
-    } else if (isMakeup) {
-      cellContent=`<div class="cal-badge makeup">📚 ชดเชย</div>${holInfo.note?`<div class="cal-summary">${holInfo.note}</div>`:''}`;
-      if(hasData) cellContent+=`<div class="cal-dots">${dotsHtml}</div>`;
-    } else if (hasData) {
-      const parts=[];
-      if(cntM) parts.push(`<span style="color:#16a34a;">ม${cntM}</span>`);
-      if(cntK) parts.push(`<span style="color:#dc2626;">ข${cntK}</span>`);
-      if(cntL) parts.push(`<span style="color:#d97706;">ล${cntL}</span>`);
-      if(cntP) parts.push(`<span style="color:#be185d;">ป${cntP}</span>`);
-      if(cntS) parts.push(`<span style="color:#6366f1;">ส${cntS}</span>`);
-      if(cntNone) parts.push(`<span style="color:#94a3b8;">?${cntNone}</span>`);
-      cellContent=`<div class="cal-dots">${dotsHtml}</div><div class="cal-summary">${parts.join(' ')}</div>`;
-    } else {
-      cellContent=`<div class="cal-no-data">ยังไม่เช็ค</div>`;
-    }
-
-    const holBtn = `<button class="cal-holiday-btn" onclick="event.stopPropagation();openHolidayModal('${dateStr}')" title="วันหยุด/ชดเชย">⚙️</button>`;
-    const canEdit = !isHoliday && (!isWeekend || isMakeup);
+    // 🟢 แก้ไขเงื่อนไข canEdit ให้เช็ค isWithinTerm ด้วย
+    const canEdit = !isHoliday && (!isWeekend || isMakeup) && isWithinTerm;
+    
     const clickable = canEdit 
         ? `onclick="openCalDay('${dateStr}')"` 
-        : `onclick="showToast('วันนี้เป็นวันหยุด ไม่สามารถบันทึกได้ (ยกเว้นตั้งค่าเป็นวันเรียนชดเชย)', 'error')"`;
+        : `onclick="showToast('วันที่เลือกไม่อยู่ในระยะเวลาเทอม หรือเป็นวันหยุด', 'error')"`;
 
     const cellClass =['cal-cell',
       isToday ? 'today' : '',
@@ -3098,31 +3071,36 @@ function printSummaryReport() {
 
   openPrint(html);
 }
-  function checkMissingAttendance() {
+function checkMissingAttendance() {
   const alertBox = document.getElementById('missingAttendanceAlert');
   const listDiv = document.getElementById('missingDatesList');
   const missingDates = [];
 
+  const startD = parseThaiDate(termDates.start);
+  const endD = parseThaiDate(termDates.end);
   const daysInMonth = new Date(calYear - 543, calMonth, 0).getDate();
   const today = new Date();
   
   for (let d = 1; d <= daysInMonth; d++) {
-    const dateStr = pad(d) + '/' + pad(calMonth) + '/' + calYear;
     const dObj = new Date(calYear - 543, calMonth - 1, d);
+    const dateStr = pad(d) + '/' + pad(calMonth) + '/' + calYear;
     
-    // 1. ถ้าเป็นวันอนาคต ไม่ต้องแจ้งเตือน
+    // 🟢 1. เช็คว่าวันที่นี้อยู่ในเทอมหรือไม่ ถ้าไม่ให้ข้ามไป
+    if (startD && endD && (dObj < startD || dObj > endD)) continue;
+    
+    // 2. ถ้าเป็นวันอนาคต ไม่ต้องแจ้งเตือน
     if (dObj > today) continue;
     
-    // 2. ถ้าเป็นวันหยุดพิเศษ (Holiday) ไม่ต้องแจ้งเตือน
+    // 3. ถ้าเป็นวันหยุดพิเศษ (Holiday) ไม่ต้องแจ้งเตือน
     if (calHolidays[dateStr] && calHolidays[dateStr].type === 'holiday') continue;
     
-    // 3. ถ้าเป็นวันเสาร์-อาทิตย์ และไม่ใช่วันเรียนชดเชย ไม่ต้องแจ้งเตือน
+    // 4. ถ้าเป็นวันเสาร์-อาทิตย์ และไม่ใช่วันเรียนชดเชย ไม่ต้องแจ้งเตือน
     const dow = dObj.getDay();
     const isWeekend = (dow === 0 || dow === 6);
     const isMakeup = (calHolidays[dateStr] && calHolidays[dateStr].type === 'makeup');
     if (isWeekend && !isMakeup) continue;
     
-    // 4. ตรวจสอบว่ามีข้อมูลเช็คชื่อหรือไม่
+    // 5. ตรวจสอบว่ามีข้อมูลเช็คชื่อหรือไม่
     const dayAtt = calDayData[dateStr];
     if (!dayAtt || Object.keys(dayAtt).length === 0) {
       missingDates.push(d);
