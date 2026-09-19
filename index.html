@@ -2283,7 +2283,7 @@ function calSetAll(status) {
   calUpdateDirty();
 }
 
-async function calSaveDay() {
+async function calSaveDay({ offerHomeroom = true } = {}) {
   if (calSaving) return false;
   const cls = document.getElementById('calClassroom').value;
   const records = calStudents.map(s => ({ studentId: s.studentId, status: calEditAtt[s.studentId] || '-' }));
@@ -2322,6 +2322,9 @@ async function calSaveDay() {
     controls.forEach(([el, disabled]) => { el.disabled = disabled; });
     saveButton.textContent = saved ? '✓ บันทึกแล้ว' : 'ลองบันทึกอีกครั้ง';
   }
+  if (saved && offerHomeroom && confirm(`บันทึกเช็คชื่อวันที่ ${calEditDate} สำเร็จแล้ว\nต้องการบันทึกโฮมรูมต่อเลยไหม?`)) {
+    await openHomeroomModal();
+  }
   return saved;
 }
   
@@ -2330,7 +2333,7 @@ async function clearFullDay() {
   calStudents.forEach(s => { calEditAtt[s.studentId] = ''; });
   document.getElementById('calDayNote').value = '';
   calUpdateDirty();
-  const saved = await calSaveDay();
+  const saved = await calSaveDay({ offerHomeroom: false });
   renderCalDayStudents();
   if (saved) showToast('ล้างข้อมูลของวันนี้เรียบร้อยแล้ว', 'success');
 }
