@@ -1420,13 +1420,14 @@ function printDashboard() {
     titleStr = 'ประจำ' + thaiDateFull(dashDate);
   } else {
     const mm = document.getElementById('dashMonthPicker').value;
-    titleStr = `สรุปเดือน ${THAI_MONTHS_CAL[parseInt(mm)]} ${currentYear.split('/')[1]}`;
+    titleStr = `สรุปเดือน ${THAI_MONTHS_CAL[parseInt(mm)]} ${String(currentYear).split('/').pop()}`;
   }
 
+  const percent = (total, p, a, l, late) => Number(total) > 0 && [p,a,l,late].some(v => Number(v) > 0) ? Math.round(Number(p || 0) / Number(total) * 100) + '%' : '—';
   let sumTotal=0, sumP=0, sumA=0, sumL=0, sumLa=0;
   const rowsHtml = dashData.classes.map(d => {
-    const total = d.total || 0;
-    const p = d.p||0, a = d.a||0, l = d.l||0, la = d.la||0;
+    const total = Number(d.total) || 0;
+    const p = Number(d.p)||0, a = Number(d.a)||0, l = Number(d.l)||0, la = Number(d.la)||0;
     sumTotal += total; sumP += p; sumA += a; sumL += l; sumLa += la;
     const pct = total ? Math.round((p / total) * 100) : 0;
     return `<tr>
@@ -1436,7 +1437,7 @@ function printDashboard() {
       <td style="text-align:center; color:#991b1b; font-weight:bold;">${a}</td>
       <td style="text-align:center; color:#92400e; font-weight:bold;">${l}</td>
       <td style="text-align:center; color:#3730a3; font-weight:bold;">${la}</td>
-      <td style="text-align:center; font-weight:bold; color:${pct<80?'#991b1b':'#065f46'};">${pct}%</td>
+      <td style="text-align:center; font-weight:bold; color:${pct<80?'#991b1b':'#065f46'};">${percent(total, p, a, l, la)}</td>
     </tr>`;
   }).join('');
 
@@ -1459,7 +1460,7 @@ function printDashboard() {
     <td style="text-align:center; color:#991b1b;">${sumA}</td>
     <td style="text-align:center; color:#92400e;">${sumL}</td>
     <td style="text-align:center; color:#3730a3;">${sumLa}</td>
-    <td style="text-align:center; color:${sumPct<80?'#991b1b':'#065f46'};">${sumPct}%</td>
+    <td style="text-align:center; color:${sumPct<80?'#991b1b':'#065f46'};">${percent(sumTotal, sumP, sumA, sumL, sumLa)}</td>
   </tr>`;
 
   let extraContent = '';
@@ -1473,7 +1474,7 @@ function printDashboard() {
         <td style="text-align:center; color:#991b1b; font-size:11px; font-weight:bold;">${d.a}</td>
         <td style="text-align:center; color:#92400e; font-size:11px; font-weight:bold;">${d.l}</td>
         <td style="text-align:center; color:#3730a3; font-size:11px; font-weight:bold;">${d.la}</td>
-        <td style="text-align:center; font-weight:bold; font-size:11px; color:${pct<80?'#991b1b':'#065f46'};">${pct}%</td>
+        <td style="text-align:center; font-weight:bold; font-size:11px; color:${pct<80?'#991b1b':'#065f46'};">${percent(d.total, d.p, d.a, d.l, d.la)}</td>
       </tr>`;
     }).join('');
 
@@ -1506,7 +1507,7 @@ function printDashboard() {
     tableHead: tableHead,
     tableBody: tableBody,
     summary: `ข้อมูล ณ วันที่พิมพ์ : ${printDate}`,
-    alertNote: '',
+    alertNote: 'หมายเหตุ: — หมายถึงไม่มีฐานข้อมูลสำหรับคำนวณเปอร์เซ็นต์; ตัวเลขอ้างอิงข้อมูลที่ระบบส่งมา และอาจยังไม่ครบทุกชั้นหรือทุกวัน',
     extraContent: extraContent 
   });
   openPrint(html);
