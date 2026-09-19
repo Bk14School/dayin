@@ -349,6 +349,29 @@ body { font-family: 'Prompt', sans-serif; background: var(--bg); color: var(--te
   75% { transform: translateX(5px); }
 }
 .mobile-nav-toggle { display:none; }
+.dash-mobile { display:none; }
+.dash-school-details { margin-top:18px;border:1px solid #e2e8f0;border-radius:12px;padding:10px 12px; }
+.dash-school-details > summary { font-size:14px;color:#475569;cursor:pointer;min-height:44px;align-content:center; }
+@media(max-width:640px) {
+  #dashboardPage .report-table-wrap { display:none; }
+  .dash-mobile { display:block; }
+  .dash-overall { background:#f0f9ff;border:1px solid #bae6fd;border-radius:14px;padding:16px;margin-bottom:16px; }
+  .dash-overall h3, .dash-class h3 { font-size:16px;font-weight:600;margin:0; }
+  .dash-class { border:1px solid #e2e8f0;border-radius:14px;padding:14px;margin-bottom:12px; }
+  .dash-class-head { display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:10px; }
+  .dash-meta { color:#64748b;font-size:13px;margin:8px 0; }
+  .dash-metrics { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px; }
+  .dash-metric { background:#f8fafc;border-radius:10px;padding:10px;color:#475569;font-size:13px; }
+  .dash-metric b { display:block;font-size:24px;line-height:1.3;margin-top:3px; }
+  .dash-metric.present { background:#ecfdf5;color:#047857; }
+  .dash-metric.absent { background:#fef2f2;color:#b91c1c; }
+  .dash-pct { border-radius:8px;background:#ecfdf5;color:#047857;font-size:13px;padding:5px 8px;text-align:right; }
+  .dash-pending { font-size:13px;color:#92400e;background:#fffbeb;border-radius:8px;padding:8px;margin-top:10px; }
+  #dashboardPage .date-bar { background:#f8fafc !important;color:#334155;border:1px solid #e2e8f0; }
+  #dashboardPage .date-nav input { background:white;color:#334155;color-scheme:light;border:1px solid #cbd5e1; }
+  #dashboardPage .date-nav { display:grid;grid-template-columns:1fr; }
+  #dashboardPage .date-nav > * { width:100%; }
+}
 /* Mobile layout: readable controls, compact navigation and scrollable data tables. */
 @media (max-width:640px) {
   html { -webkit-text-size-adjust:100%; }
@@ -529,12 +552,12 @@ body { font-family: 'Prompt', sans-serif; background: var(--bg); color: var(--te
 
 <!-- ======= Public Dashboard Page ======= -->
 <div id="dashboardPage" class="page-section">
-      <div id="schoolDaysSummaryRow" class="row g-3 mb-3" style="display:none;"></div>
 
   <div class="container-main">
     <div class="app-card">
       <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-        <div class="card-title mb-0">📊 สถิติการมาเรียน (ภาพรวมโรงเรียน)</div>
+        <div class="card-title mb-0">📊 สถิติภาพรวมโรงเรียน</div>
+        <button class="nav-btn" onclick="returnToCalendar()">← กลับปฏิทิน</button>
       </div>
       <div class="date-bar" style="background: linear-gradient(135deg, #1e3a5f, #3b82f6);">
         <div>
@@ -583,6 +606,8 @@ body { font-family: 'Prompt', sans-serif; background: var(--bg); color: var(--te
           <tfoot id="dashTfoot" style="background:#f1f5f9;"></tfoot>
         </table>
       </div>
+      <div id="dashMobileCards" class="dash-mobile" aria-live="polite"></div>
+      <details class="dash-school-details"><summary>📅 ดูจำนวนวันเรียนในเทอม</summary><div id="schoolDaysSummaryRow" class="row g-3 mb-3" style="display:none;"></div></details>
     </div>
   </div>
 </div>
@@ -964,6 +989,22 @@ async function api(action, data={}) {
   return json.data;
 }
 
+function showCalendarHome() {
+  if (!currentUser) { showPage('loginPage'); return; }
+  showPage('calendarPage');
+  renderCalendar();
+}
+function returnToCalendar() {
+  for (const modal of document.querySelectorAll('.modal.show')) {
+    bootstrap.Modal.getInstance(modal)?.hide();
+    if (modal.classList.contains('show')) return;
+  }
+  showCalendarHome();
+}
+document.querySelectorAll('.modal').forEach(modal => {
+  modal.addEventListener('hidden.bs.modal', () => { if (currentUser) showCalendarHome(); });
+});
+
 function showPage(page) {
   document.getElementById('mobileNavItems').classList.remove('mobile-open');
   document.getElementById('mobileNavToggle').setAttribute('aria-expanded', 'false');
@@ -1294,16 +1335,19 @@ async function loadDashboard() {
   }
 
   showProgress('กำลังดึงสถิติ...');
+  document.getElementById('dashMobileCards').innerHTML = '<p class="dash-meta">กำลังโหลดสถิติ…</p>';
   try {
     dashData = await api('getDashboardStats', { year: currentYear, mode: mode, date: dashDate, month: monthPicker.value });
     renderDashboard();
   } catch(e) {
     showToast('โหลดสถิติไม่สำเร็จ: ' + e.message, 'error');
+    document.getElementById('dashMobileCards').innerHTML = '<p class="dash-pending">โหลดสถิติไม่สำเร็จ กรุณาเลือกวันที่หรือเดือนอีกครั้งเพื่อลองใหม่</p>';
   }
   hideProgress();
 }
 
 function renderDashboard() {
+  renderDashboardCards();
   const tbody = document.getElementById('dashTbody');
   const tfoot = document.getElementById('dashTfoot');
   let html = '';
@@ -1346,6 +1390,23 @@ function renderDashboard() {
     <td class="text-center fw-bold text-info">${sumLa}</td>
     <td class="text-center fw-bold" style="${sumPctColor}">${sumPct}%</td>
   </tr>`;
+}
+
+function renderDashboardCards() {
+  const el = document.getElementById('dashMobileCards');
+  if (!dashData?.classes?.length) { el.innerHTML = '<p class="dash-meta">ไม่พบข้อมูลในช่วงเวลาที่เลือก</p>'; return; }
+  const monthly = document.getElementById('dashMode').value === 'monthly';
+  const unit = monthly ? 'คน×วัน' : 'คน';
+  const clean = value => String(value).replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+  const rows = dashData.classes.map(d => ({name:d.class,total:Number(d.total)||0,p:Number(d.p)||0,a:Number(d.a)||0,l:Number(d.l)||0,la:Number(d.la)||0}));
+  const totals = rows.reduce((sum,d) => { for (const key of ['total','p','a','l','la']) sum[key]+=d[key]; return sum; },{total:0,p:0,a:0,l:0,la:0});
+  const card = (d, overall) => {
+    const recorded = d.p+d.a+d.l+d.la;
+    const pending = Math.max(0,d.total-recorded);
+    const pct = d.total && recorded ? Math.round(d.p/d.total*100)+'%' : '—';
+    return `<section class="${overall?'dash-overall':'dash-class'}"><div class="dash-class-head"><h3>${overall?'รวมทั้งโรงเรียน':clean(d.name)}</h3><span class="dash-pct">มาเรียน ${pct}</span></div><p class="dash-meta">${monthly?'จำนวนสะสม':'นักเรียนทั้งหมด'} ${d.total} ${unit}</p><div class="dash-metrics"><div class="dash-metric present">มาเรียน<b>${d.p}</b></div><div class="dash-metric absent">ขาดเรียน<b>${d.a}</b></div><div class="dash-metric">ลา / ป่วย<b>${d.l}</b></div><div class="dash-metric">สาย<b>${d.la}</b></div></div>${pending?`<div class="dash-pending">ยังไม่มีสถานะ ${pending} ${unit}</div>`:''}${recorded&&pending?'<p class="dash-meta">เปอร์เซ็นต์เทียบจำนวนทั้งหมด ข้อมูลยังไม่ครบ</p>':''}</section>`;
+  };
+  el.innerHTML = card(totals,true) + '<h3 style="font-size:16px;margin:18px 0 12px">แยกตามชั้นเรียน</h3>' + rows.map(d=>card(d,false)).join('');
 }
 
 function printDashboard() {
@@ -2324,6 +2385,8 @@ async function calSaveDay({ offerHomeroom = true } = {}) {
   }
   if (saved && offerHomeroom && confirm(`บันทึกเช็คชื่อวันที่ ${calEditDate} สำเร็จแล้ว\nต้องการบันทึกโฮมรูมต่อเลยไหม?`)) {
     await openHomeroomModal();
+  } else if (saved) {
+    returnToCalendar();
   }
   return saved;
 }
@@ -2355,6 +2418,7 @@ function openPrint(html) {
   w.document.open();
   w.document.write(html);
   w.document.close();
+  returnToCalendar();
 }
 
 function buildPrintPage({school,cls,currentYear,printDate,title,subTitle,orientation,tableHead,tableBody,summary,alertNote,extraContent=''}) {
@@ -2790,6 +2854,7 @@ async function printDailyHomeroomReport() {
     printWindow.document.open();
     printWindow.document.write(html);
     printWindow.document.close();
+    returnToCalendar();
 
   } catch(e) { 
     printWindow.close();
@@ -2921,6 +2986,7 @@ th { background:#e2e8f0; text-align:center; }
     printWindow.document.open();
     printWindow.document.write(html);
     printWindow.document.close();
+    returnToCalendar();
 
   } catch (e) {
     printWindow.close();
@@ -3010,6 +3076,7 @@ function printWarningLetter(studentId, level) {
   printWindow.document.open();
   printWindow.document.write(html);
   printWindow.document.close();
+    returnToCalendar();
 }  
   // =============================================
 // ฟังก์ชันอัปเดตตัวเลขวันเรียนในหน้า ปฏิทิน
