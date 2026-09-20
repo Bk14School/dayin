@@ -531,6 +531,28 @@ body::before { content:'';position:fixed;inset:0;z-index:-1;pointer-events:none;
 #homeroomModal label:has(.hr-topic:checked) { border-color:#bf78cd;background:#f7eafb; }
 .hr-topic { accent-color:#9333b8; }
 @media print { body::before { display:none; } }
+
+/* Clear, compact date tiles for the monthly calendar. */
+.cal-state-compact { display:none; }
+#calGrid { gap:8px; }
+#calGrid .cal-day-name { padding:10px 0;font-size:14px; }
+#calGrid .cal-day-name:first-child,#calGrid .cal-day-name:nth-child(7) { color:#b91c1c; }
+#calGrid .cal-cell { border-width:1px;border-radius:14px;padding:12px 6px;min-height:100px; }
+#calGrid .cal-date { font-size:26px;font-weight:700;line-height:1.2;margin-bottom:8px;font-variant-numeric:tabular-nums; }
+#calGrid .cal-cell.today .cal-date { background:#702179;color:white;border-radius:50%;width:36px;height:36px;line-height:36px;margin:0 auto 6px; }
+#calGrid .cal-today-label { display:none; }
+@media(max-width:640px) {
+  #calGrid { gap:5px; }
+  #calGrid .cal-cell { min-height:72px;padding:9px 1px 7px;border-radius:11px; }
+  #calGrid .cal-date { font-size:22px;line-height:28px;margin-bottom:5px; }
+  #calGrid .cal-cell.today .cal-date { width:28px;height:28px;line-height:28px;margin-bottom:5px; }
+  #calGrid .cal-check-state { font-size:11px;line-height:16px;white-space:nowrap;overflow-wrap:normal; }
+  #calGrid .cal-state-full { display:none; }
+  #calGrid .cal-state-compact { display:inline; }
+  #calGrid .cal-day-name { padding:7px 0;font-size:12px; }
+  .cal-legend { font-size:11px;gap:6px 10px;line-height:1.6; }
+}
+
 </style>
 </head>
 <body>
@@ -2234,15 +2256,15 @@ function renderCalendar() {
     if (isHoliday || (isWeekend && !isMakeup) || !isWithinTerm) {
       cellContent = '<div class="cal-check-state off">'+(!isWithinTerm ? 'นอกเทอม' : 'หยุด')+'</div>';
     } else if (hasData) {
-      cellContent = '<div class="cal-check-state '+(isPartial?'partial':'')+'">'+(isPartial ? 'ยังไม่ครบ' : 'บันทึกแล้ว')+'</div><div class="cal-present-total">มา '+cntM+' คน</div>';
+      cellContent = '<div class="cal-check-state '+(isPartial?'partial':'')+'">'+'<span class="cal-state-full">'+(isPartial ? 'ยังไม่ครบ' : 'บันทึกแล้ว')+'</span><span class="cal-state-compact">'+(isPartial ? 'ไม่ครบ' : 'มา '+cntM)+'</span>'+ '</div><div class="cal-present-total">มา '+cntM+' คน</div>';
     } else {
-      cellContent = '<div class="cal-check-state pending">'+'ยังไม่บันทึก'+'</div>';
+      cellContent = '<div class="cal-check-state pending">'+'<span class="cal-state-full">ยังไม่บันทึก</span><span class="cal-state-compact">รอลง</span>'+'</div>';
     }
     if (isMakeup) cellContent += '<div class="cal-present-total">ชดเชย</div>';
     const hrSaved = calHomeroomLogs.some(log => log.date === dateStr);
     if (calMode === 'homeroom' && !isHoliday && (!isWeekend || isMakeup) && isWithinTerm) {
       const hrText = calHomeroomState === 'loading' ? 'กำลังโหลด' : calHomeroomState !== 'ready' ? 'โหลดไม่ได้' : hrSaved ? '✓ บันทึกแล้ว' : 'ยังไม่บันทึก';
-      cellContent = '<div class="cal-check-state cal-hr-state '+(hrSaved && calHomeroomState === 'ready' ? '' : 'pending')+'">'+hrText+'</div>';
+      cellContent = '<div class="cal-check-state cal-hr-state '+(hrSaved && calHomeroomState === 'ready' ? '' : 'pending')+'">'+'<span class="cal-state-full">'+hrText+'</span><span class="cal-state-compact">'+(calHomeroomState === 'loading' ? 'รอโหลด' : calHomeroomState !== 'ready' ? 'ลองใหม่' : hrSaved ? '✓' : 'รอลง')+'</span></div>';
     }
 
     const holBtn = `<button class="cal-holiday-btn" onclick="event.stopPropagation();openHolidayModal('${dateStr}')" title="วันหยุด/ชดเชย">⚙️</button>`;
