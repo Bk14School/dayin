@@ -812,7 +812,7 @@ body::before { content:'';position:fixed;inset:0;z-index:-1;pointer-events:none;
       </div>
       
       </details>
-      <div id="calLegend" class="cal-legend"><span class="done">เช็คครบ</span><span class="partial">เช็คบางส่วน</span><span>ยังไม่เช็ค</span></div>
+      <div id="calLegend" class="cal-legend"><span class="done">บันทึกแล้ว</span><span class="partial">ยังไม่ครบ</span><span>ยังไม่บันทึก</span></div>
       <div id="calGrid" class="cal-grid" aria-label="ปฏิทินเช็คชื่อนักเรียน"></div>
       
       <div class="cal-student-panel" id="calStudentPanel">
@@ -2009,7 +2009,7 @@ async function setCalMode(mode) {
   document.getElementById('calHomeroomToolbar').hidden = mode !== 'homeroom';
   document.getElementById('calLegend').innerHTML = mode === 'homeroom'
     ? '<span class="done">บันทึกแล้ว</span><span>ยังไม่บันทึก</span>'
-    : '<span class="done">เช็คครบ</span><span class="partial">เช็คบางส่วน</span><span>ยังไม่เช็ค</span>';
+    : '<span class="done">บันทึกแล้ว</span><span class="partial">ยังไม่ครบ</span><span>ยังไม่บันทึก</span>';
   if (mode === 'homeroom') await loadCalendarHomeroom();
   else renderCalendar();
 }
@@ -2226,9 +2226,9 @@ function renderCalendar() {
     if (isHoliday || (isWeekend && !isMakeup) || !isWithinTerm) {
       cellContent = '<div class="cal-check-state off">'+(!isWithinTerm ? 'นอกเทอม' : 'หยุด')+'</div>';
     } else if (hasData) {
-      cellContent = '<div class="cal-check-state '+(isPartial?'partial':'')+'">'+(isPartial ? checkedCount+'/'+calStudents.length : '✓ ครบ')+'</div><div class="cal-present-total">มา '+cntM+' คน</div>';
+      cellContent = '<div class="cal-check-state '+(isPartial?'partial':'')+'">'+(isPartial ? 'ยังไม่ครบ' : 'บันทึกแล้ว')+'</div><div class="cal-present-total">มา '+cntM+' คน</div>';
     } else {
-      cellContent = '<div class="cal-check-state pending">'+(dObj > now ? 'รอเช็ค' : 'ยังไม่เช็ค')+'</div>';
+      cellContent = '<div class="cal-check-state pending">'+'ยังไม่บันทึก'+'</div>';
     }
     if (isMakeup) cellContent += '<div class="cal-present-total">ชดเชย</div>';
     const hrSaved = calHomeroomLogs.some(log => log.date === dateStr);
@@ -2254,7 +2254,7 @@ function renderCalendar() {
       isPartial && calMode === 'attendance' ? 'partial' : ''
     ].filter(Boolean).join(' ');
 
-    html += `<div class="${cellClass}" ${clickable} tabindex="0" role="button" aria-label="วันที่ ${d} ${THAI_MONTHS_CAL[calMonth]} ${calYear}, ${isHoliday || (isWeekend && !isMakeup) ? 'วันหยุด' : calMode === 'homeroom' ? (calHomeroomState !== 'ready' ? 'กำลังโหลดหรือโหลดไม่สำเร็จ' : hrSaved ? 'โฮมรูมบันทึกแล้ว' : 'โฮมรูมยังไม่บันทึก') : hasData ? 'เช็คแล้ว '+checkedCount+' จาก '+calStudents.length+' คน' : 'ยังไม่เช็ค'}" onkeydown="if(event.target===this && (event.key==='Enter' || event.key===' ')){event.preventDefault();this.click();}">
+    html += `<div class="${cellClass}" ${clickable} tabindex="0" role="button" aria-label="วันที่ ${d} ${THAI_MONTHS_CAL[calMonth]} ${calYear}, ${isHoliday || (isWeekend && !isMakeup) ? 'วันหยุด' : calMode === 'homeroom' ? (calHomeroomState !== 'ready' ? 'กำลังโหลดหรือโหลดไม่สำเร็จ' : hrSaved ? 'โฮมรูมบันทึกแล้ว' : 'โฮมรูมยังไม่บันทึก') : hasData ? 'บันทึกแล้ว '+checkedCount+' จาก '+calStudents.length+' คน' : 'ยังไม่บันทึก'}" onkeydown="if(event.target===this && (event.key==='Enter' || event.key===' ')){event.preventDefault();this.click();}">
       ${holBtn}
       <div class="cal-date ${isToday ? 'today-num' : ''}">${d}${isToday ? ' <span class="cal-today-label" style="font-size:.6rem;color:#9333b8;">วันนี้</span>' : ''}</div>
       ${cellContent}${noteBadge}
@@ -2375,7 +2375,7 @@ function renderCalDayStudents() {
   const activeStudents = calStudents.filter(s => !s.name.includes('(ย้ายออก)'));
   
   const checked = Object.values(calEditAtt).filter(v => v).length;
-  document.getElementById('calDayChecked').textContent = `เช็คแล้ว ${checked}/${activeStudents.length} คน`;
+  document.getElementById('calDayChecked').textContent = `ระบุสถานะ ${checked}/${activeStudents.length} คน`;
 
   const heading = `<div class="cal-stu-heading"><span>เลขที่</span><span class="cal-name-heading">ชื่อ–นามสกุล</span><span>มา</span><span>ขาด</span><span>ลา</span><span>ป่วย</span><span>สาย</span></div>`;
   document.getElementById('calDayStudents').innerHTML = heading + activeStudents.map((s,i) => {
@@ -2399,7 +2399,7 @@ function calSetStatus(studentId, status, btnEl) {
   btnEl.classList.add('active');
   btnEl.setAttribute('aria-pressed', 'true');
   const checked = Object.values(calEditAtt).filter(v=>v).length;
-  document.getElementById('calDayChecked').textContent = `เช็คแล้ว ${checked}/${calStudents.length} คน`;
+  document.getElementById('calDayChecked').textContent = `ระบุสถานะ ${checked}/${calStudents.length} คน`;
   calUpdateDirty();
 }
 
@@ -2559,7 +2559,7 @@ function renderStudentTimeline() {
 
       const bg = bgMap[v] || '#f8fafc'; const clr = colorsMap[v] || '#9ca3af';
       const opacity = (v && !currentFilters[v]) ? 'opacity: 0.2;' : 'opacity: 1;';
-      return `<div class="cal-stu-day-dot" style="background:${bg};color:${clr};${opacity}" title="${ds}: ${v || 'ยังไม่เช็ค'}" onclick="openCalDay('${ds}')">${v || '?'}</div>`;
+      return `<div class="cal-stu-day-dot" style="background:${bg};color:${clr};${opacity}" title="${ds}: ${v || 'ยังไม่บันทึก'}" onclick="openCalDay('${ds}')">${v || '?'}</div>`;
     }).join('');
 
     const pct = total ? Math.round(p / total * 100) : 0;
@@ -2735,7 +2735,7 @@ function printCalStudent() {
   const rows = calStudents.map((s, i) => {
     const st = calEditAtt[s.studentId] || dayAtt[s.studentId] || '-'; 
 
-    let label = 'ยังไม่เช็ค'; let shortLabel = '-'; let bg = '#f8fafc'; let fg = '#64748b'; let bd = '#cbd5e1';
+    let label = 'ยังไม่บันทึก'; let shortLabel = '-'; let bg = '#f8fafc'; let fg = '#64748b'; let bd = '#cbd5e1';
     if (st === 'ม') { label = 'มาเรียน'; shortLabel = 'ม'; bg = '#dcfce7'; fg = '#166534'; bd = '#86efac'; present++; } 
     else if (st === 'ข') { label = 'ขาด'; shortLabel = 'ข'; bg = '#fee2e2'; fg = '#991b1b'; bd = '#fca5a5'; absent++; } 
     else if (st === 'ล') { label = 'ลา'; shortLabel = 'ล'; bg = '#fef3c7'; fg = '#92400e'; bd = '#fcd34d'; leave++; } 
@@ -2748,12 +2748,12 @@ function printCalStudent() {
 
   const checkedCount = present + absent + leave + sick + late;
   const attendancePct = calStudents.length ? Math.round((present / calStudents.length) * 100) : 0;
-  const summaryText = unchecked > 0 ? `เช็คชื่อแล้ว ${checkedCount}/${calStudents.length} คน` : `เช็คชื่อครบ ${calStudents.length}/${calStudents.length} คน`;
+  const summaryText = `บันทึกแล้ว ${checkedCount}/${calStudents.length} คน`;
   const statusSummary = [
     ['มาเรียน', present, '#166534'], ['ขาด', absent, '#991b1b'],
     ['ลา', leave, '#92400e'], ['ป่วย', sick, '#be185d'], ['สาย', late, '#3730a3']
   ].map(([label, count, color]) => `<span style="color:${color};white-space:nowrap;">${label} ${count} คน</span>`).join('');
-  const pendingSummary = unchecked > 0 ? `<span style="color:#475569;white-space:nowrap;">ยังไม่เช็ค ${unchecked} คน</span>` : '';
+  const pendingSummary = unchecked > 0 ? `<span style="color:#475569;white-space:nowrap;">ยังไม่บันทึก ${unchecked} คน</span>` : '';
   const safeDate = targetDate.replace(/\//g, '-');
   const fileName = `รายงานเช็คชื่อ_${cls}_${safeDate}.png`;
 
