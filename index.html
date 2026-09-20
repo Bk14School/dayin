@@ -3037,8 +3037,9 @@ function printCalStudent() {
     .status-badge { display: inline-flex; align-items: center; justify-content: center; min-width: 34px; height: 30px; border-radius: 999px; border: 1.5px solid; font-weight: 800; font-size: 13px; }
     .print-actions { width: 794px; margin: 14px auto 0; display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
     .btn { border: none; border-radius: 10px; padding: 10px 16px; font-weight: 700; cursor: pointer; }
+    .btn-share { background:#07883e;color:#fff; } .btn:disabled { opacity:.6;cursor:wait; } .share-help { width:794px;margin:12px auto;text-align:center;color:#475569;font-size:14px; }
     .btn-print { background: #9333b8; color: #fff; } .btn-save { background: #7c3aed; color: #fff; } .btn-close { background: #e5e7eb; }
-    @media print { body { background: #fff; padding: 0; } .print-actions { display: none !important; } .page { width: 100%; min-height: auto; box-shadow: none; margin: 0; } }
+    @media print { body { background: #fff; padding: 0; } .print-actions,.share-help { display: none !important; } .page { width: 100%; min-height: auto; box-shadow: none; margin: 0; } }
   </style></head><body>
   <div class="page" id="reportCapture">
     <div class="header"><div><h2 style="margin:0;color:#9333b8;">${school}</h2><div style="font-size:13px;color:#475569;">รายงานสรุปการเช็คชื่อนักเรียนประจำวัน</div></div><div style="text-align:right;font-size:13px;">วันที่พิมพ์ ${printDate}<br>ปีการศึกษา ${term}</div></div>
@@ -3046,18 +3047,68 @@ function printCalStudent() {
     <div class="meta-wrap"><div class="meta-item"><b>ชั้นเรียน:</b> ${cls}</div><div class="meta-item"><b>ครูผู้บันทึก:</b> ${teacher}</div><div class="meta-item"><b>สถานะรวม:</b> ${summaryText}<div style="display:flex;flex-wrap:wrap;gap:4px 12px;margin-top:6px;font-size:13px;line-height:1.6;">${statusSummary}${pendingSummary}</div></div><div class="meta-item"><b>มาเรียนวันนี้:</b> ${attendancePct}%</div></div>
     <table><thead><tr><th style="width:50px;">ลำดับ</th><th style="width:110px;">รหัส</th><th>ชื่อ-นามสกุล</th><th style="width:90px;">ชั้น</th><th style="width:70px;">รหัส</th><th style="width:130px;">สถานะ</th></tr></thead><tbody>${rows}</tbody></table>
   </div>
-  <div class="print-actions"><button class="btn btn-print" onclick="window.print()">🖨️ พิมพ์รายงาน</button><button class="btn btn-save" id="btnSavePng" onclick="saveReportAsPNG()">🖼️ เซฟเป็น PNG</button><button class="btn btn-close" onclick="window.close()">ปิดหน้าต่าง</button></div>
+  <div class="print-actions"><button class="btn btn-print" onclick="window.print()">🖨️ พิมพ์รายงาน</button><button class="btn btn-save" id="btnSavePng" onclick="saveReportAsPNG()">🖼️ เซฟเป็น PNG</button><button class="btn btn-share" id="btnShareReport" disabled onclick="shareReportImage()">กำลังเตรียมภาพ...</button><button class="btn btn-close" onclick="window.close()">ปิดหน้าต่าง</button></div>
+  <p class="share-help" id="shareReportHelp" role="status">เลือก LINE และกลุ่มปลายทางในเมนูแชร์ หรือบันทึก PNG แล้วแนบในกลุ่ม</p>
   <script>
-    async function saveReportAsPNG() {
-      const btn = document.getElementById('btnSavePng');
-      try {
-        btn.disabled=true; btn.textContent='กำลังสร้าง PNG...';
-        const canvas = await html2canvas(document.getElementById('reportCapture'), {scale: 2});
-        const link = document.createElement('a'); link.download = '${fileName}'; link.href = canvas.toDataURL('image/png'); link.click();
-        btn.textContent='✅ ดาวน์โหลดแล้ว'; setTimeout(()=>btn.textContent='🖼️ เซฟเป็น PNG', 2000);
-      } catch(e) { alert('ไม่สามารถสร้างไฟล์ภาพได้'); }
-      btn.disabled=false;
+    let reportImageFile = null;
+    let reportImageUrl = '';
+    let reportImageTask = null;
+    const reportImageName = ${JSON.stringify(fileName).replace(/</g, '\\u003c')};
+    function prepareReportImage() {
+      if (reportImageTask) return reportImageTask;
+      const button = document.getElementById('btnShareReport');
+      button.disabled = true;
+      button.textContent = 'กำลังเตรียมภาพ...';
+      reportImageTask = (async () => {
+        try {
+          await document.fonts.ready;
+          const canvas = await html2canvas(document.getElementById('reportCapture'), {scale:2,backgroundColor:'#ffffff',windowWidth:850,scrollX:0,scrollY:0});
+          const blob = await new Promise((resolve,reject) => canvas.toBlob(value => value ? resolve(value) : reject(new Error('สร้างภาพไม่สำเร็จ')), 'image/png'));
+          reportImageFile = new File([blob], reportImageName, {type:'image/png'});
+          reportImageUrl = URL.createObjectURL(blob);
+          button.textContent = 'แชร์ภาพ / LINE';
+        } catch(e) {
+          document.getElementById('shareReportHelp').textContent = 'เตรียมภาพไม่สำเร็จ กรุณากดเตรียมภาพอีกครั้ง';
+          button.textContent = 'เตรียมภาพอีกครั้ง';
+          reportImageTask = null;
+          throw e;
+        } finally { button.disabled = false; }
+      })();
+      return reportImageTask;
     }
+    async function saveReportAsPNG() {
+      const button = document.getElementById('btnSavePng');
+      button.disabled = true;
+      try {
+        if (!reportImageFile) await prepareReportImage();
+        const link = document.createElement('a');
+        link.download = reportImageName; link.href = reportImageUrl;
+        document.body.append(link); link.click(); link.remove();
+        document.getElementById('shareReportHelp').textContent = 'ดาวน์โหลดภาพแล้ว สามารถแนบภาพในกลุ่ม LINE ได้';
+      } catch(e) { document.getElementById('shareReportHelp').textContent = 'สร้างภาพไม่สำเร็จ กรุณาลองอีกครั้ง'; }
+      finally { button.disabled = false; }
+    }
+    async function shareReportImage() {
+      const help = document.getElementById('shareReportHelp');
+      if (!reportImageFile) {
+        try { await prepareReportImage(); help.textContent = 'ภาพพร้อมแล้ว กดแชร์ภาพ / LINE อีกครั้ง'; } catch(e) {}
+        return;
+      }
+      // Use the prepared file immediately within the user click event.
+      const button = document.getElementById('btnShareReport');
+      try {
+        if (!navigator.share || !navigator.canShare?.({files:[reportImageFile]})) {
+          help.textContent = 'เครื่องนี้แชร์ภาพโดยตรงไม่ได้ กรุณากดเซฟเป็น PNG แล้วแนบภาพใน LINE'; return;
+        }
+        button.disabled = true;
+        await navigator.share({files:[reportImageFile], title:'รายงานการเช็คชื่อประจำวัน'});
+      } catch(e) {
+        if (e.name !== 'AbortError') help.textContent = 'แชร์ภาพไม่ได้ กรุณากดเซฟเป็น PNG แล้วแนบใน LINE';
+      } finally { button.disabled = false; }
+    }
+
+    prepareReportImage().catch(() => {});
+
   <\/script></body></html>`;
   openPrint(html);
 }
