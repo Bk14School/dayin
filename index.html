@@ -508,6 +508,12 @@ body::before { content:'';position:fixed;inset:0;z-index:-1;pointer-events:none;
 .cal-cell:not(.has-data):not(.partial):not(.holiday):not(.weekend):not(.empty) { background:#fffcff;border-color:#e5d9eb; }
 .cal-cell.weekend,.cal-cell.holiday { background:#f2edf4;border-color:#e5dce9; }
 .cal-cell.today { outline-color:#a12b9e; }
+.cal-cell.has-data.attendance-exception { background:#fff3e6;border-color:#f0a44d; }
+.cal-cell.attendance-exception .cal-check-state { color:#9a440b; }
+.cal-cell.has-data.partial { background:#f5eafa;border-color:#bc83d1; }
+.cal-cell.partial .cal-check-state { color:#702179; }
+.cal-legend .attendance-exception::before { background:#d97706; }
+.cal-legend .partial::before { background:#9333b8; }
 .cal-cell:hover { border-color:#b45bcc;box-shadow:0 2px 10px #9333b824; }
 .calendar-developer { color:#55375f;background:rgba(255,250,255,.9);border:1px solid #ead8ee;border-radius:16px;margin:0 0 16px; }
 .calendar-developer strong { color:#482354; }
@@ -812,7 +818,7 @@ body::before { content:'';position:fixed;inset:0;z-index:-1;pointer-events:none;
       </div>
       
       </details>
-      <div id="calLegend" class="cal-legend"><span class="done">บันทึกแล้ว</span><span class="partial">ยังไม่ครบ</span><span>ยังไม่บันทึก</span></div>
+      <div id="calLegend" class="cal-legend"><span class="done">มาปกติครบ</span><span class="attendance-exception">มีขาด/ลา/ป่วย/สาย</span><span class="partial">บันทึกยังไม่ครบ</span><span>ยังไม่บันทึก</span></div>
       <div id="calGrid" class="cal-grid" aria-label="ปฏิทินเช็คชื่อนักเรียน"></div>
       
       <div class="cal-student-panel" id="calStudentPanel">
@@ -2009,7 +2015,7 @@ async function setCalMode(mode) {
   document.getElementById('calHomeroomToolbar').hidden = mode !== 'homeroom';
   document.getElementById('calLegend').innerHTML = mode === 'homeroom'
     ? '<span class="done">บันทึกแล้ว</span><span>ยังไม่บันทึก</span>'
-    : '<span class="done">บันทึกแล้ว</span><span class="partial">ยังไม่ครบ</span><span>ยังไม่บันทึก</span>';
+    : '<span class="done">มาปกติครบ</span><span class="attendance-exception">มีขาด/ลา/ป่วย/สาย</span><span class="partial">บันทึกยังไม่ครบ</span><span>ยังไม่บันทึก</span>';
   if (mode === 'homeroom') await loadCalendarHomeroom();
   else renderCalendar();
 }
@@ -2251,7 +2257,8 @@ function renderCalendar() {
       (calMode === 'homeroom' ? hrSaved && calHomeroomState === 'ready' : hasData) && !isHoliday ? 'has-data' : '',
       isHoliday ? 'holiday' : '',
       isMakeup ? 'makeup' : '',
-      isPartial && calMode === 'attendance' ? 'partial' : ''
+      isPartial && calMode === 'attendance' ? 'partial' : '',
+      calMode === 'attendance' && hasData && !isPartial && (cntK + cntL + cntP + cntS > 0) && !isHoliday ? 'attendance-exception' : ''
     ].filter(Boolean).join(' ');
 
     html += `<div class="${cellClass}" ${clickable} tabindex="0" role="button" aria-label="วันที่ ${d} ${THAI_MONTHS_CAL[calMonth]} ${calYear}, ${isHoliday || (isWeekend && !isMakeup) ? 'วันหยุด' : calMode === 'homeroom' ? (calHomeroomState !== 'ready' ? 'กำลังโหลดหรือโหลดไม่สำเร็จ' : hrSaved ? 'โฮมรูมบันทึกแล้ว' : 'โฮมรูมยังไม่บันทึก') : hasData ? 'บันทึกแล้ว '+checkedCount+' จาก '+calStudents.length+' คน' : 'ยังไม่บันทึก'}" onkeydown="if(event.target===this && (event.key==='Enter' || event.key===' ')){event.preventDefault();this.click();}">
