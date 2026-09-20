@@ -553,6 +553,18 @@ body::before { content:'';position:fixed;inset:0;z-index:-1;pointer-events:none;
   .cal-legend { font-size:11px;gap:6px 10px;line-height:1.6; }
 }
 
+
+.attendance-audit-open { width:100%;margin:0 0 12px;min-height:44px; }
+.audit-controls { display:flex;gap:8px;margin:8px 0 16px; }
+.audit-controls input { min-width:0;flex:1;padding:10px;border:1px solid #d8c5e2;border-radius:10px;font:inherit;font-size:16px; }
+.audit-row { display:flex;justify-content:space-between;gap:12px;align-items:center;padding:12px;margin:8px 0;border-radius:12px;background:#f8f5fa;border-left:4px solid #64748b; }
+.audit-row small { display:block;color:#64748b;margin-top:3px; }
+.audit-row.pending { background:#fff1f2;border-color:#dc2626;color:#991b1b; }
+.audit-row.partial { background:#fff7ed;border-color:#d97706;color:#92400e; }
+.audit-row.done { background:#f0fdf4;border-color:#16a34a;color:#166534; }
+.audit-help { font-size:13px;line-height:1.6;color:#64748b;margin-top:16px; }
+#attendanceAuditImage { display:block;width:100%;height:auto;margin-top:10px; }
+#attendanceAuditStatus { font-size:15px;line-height:1.6; }
 </style>
 </head>
 <body>
@@ -816,6 +828,7 @@ body::before { content:'';position:fixed;inset:0;z-index:-1;pointer-events:none;
         </div>
       </div>
       
+      <button class="nav-btn attendance-audit-open" onclick="openAttendanceAudit()">🔎 ตรวจชั้นที่ยังไม่เช็คชื่อ</button>
       <details class="cal-overview-tools">
       <summary>เครื่องมือ · รายงาน · สรุปวันเรียน</summary>
       <!-- กล่องสรุปวันเรียนตรงนี้ -->
@@ -994,6 +1007,22 @@ body::before { content:'';position:fixed;inset:0;z-index:-1;pointer-events:none;
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<div class="modal fade" id="attendanceAuditModal" tabindex="-1" aria-labelledby="attendanceAuditTitle" aria-hidden="true">
+ <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable"><div class="modal-content">
+  <div class="modal-header"><h2 class="modal-title" id="attendanceAuditTitle">ตรวจการบันทึกเช็คชื่อ</h2><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="ปิด"></button></div>
+  <div class="modal-body">
+   <label for="attendanceAuditDate">วันที่ต้องการตรวจ</label>
+   <div class="audit-controls"><input type="date" id="attendanceAuditDate" onchange="loadAttendanceAudit()"><button class="nav-btn" onclick="loadAttendanceAudit()">ตรวจอีกครั้ง</button></div>
+   <p id="attendanceAuditStatus" role="status" aria-live="polite"></p>
+   <div id="attendanceAuditRows"></div>
+   <details id="attendanceAuditPreview" hidden><summary>ดูภาพก่อนส่ง</summary><img id="attendanceAuditImage" alt="ภาพสรุปการบันทึกเช็คชื่อแยกตามชั้นเรียน"></details>
+   <p class="audit-help">ตรวจว่าลงสถานะนักเรียนแล้วกี่คน ไม่ใช่จำนวนผู้มาเรียน • เลือก LINE และกลุ่มปลายทางจากเมนูแชร์ หากไม่มี LINE ให้บันทึกภาพแล้วแนบในกลุ่ม</p>
+  </div>
+  <div class="modal-footer"><button id="attendanceAuditSave" class="btn btn-outline-primary" disabled onclick="saveAttendanceAudit()">บันทึกภาพ</button><button id="attendanceAuditShare" class="btn btn-primary" disabled onclick="shareAttendanceAudit()">แชร์ภาพ / LINE</button></div>
+ </div></div>
+</div>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
 <script>
@@ -1397,6 +1426,129 @@ function renderSchoolDaysSummary() {
 }
 
 // ฟังก์ชันสร้าง UI แสดงผลในหน้า Dashboard
+let attendanceAuditVersion = 0;
+let attendanceAuditFile = null;
+let attendanceAuditUrl = '';
+function auditRows(classes) {
+  const count = n => Math.max(0, Number(n) || 0);
+  return classes.map(d => {
+    const total = count(d.total), recorded = count(d.p)+count(d.a)+count(d.l)+count(d.la);
+    const state = total === 0 ? 'empty' : recorded === 0 ? 'pending' : recorded < total ? 'partial' : recorded === total ? 'done' : 'invalid';
+    return {name:String(d.class || 'ไม่ระบุชั้น'),total,recorded,state,
+      label:{empty:'ไม่มีข้อมูลนักเรียน',pending:'ยังไม่บันทึก',partial:'บันทึกบางส่วน',done:'บันทึกครบแล้ว',invalid:'โปรดตรวจข้อมูล'}[state]};
+  }).sort((a,b) => ['pending','partial','invalid','done','empty'].indexOf(a.state)-['pending','partial','invalid','done','empty'].indexOf(b.state));
+}
+function clearAttendanceAuditImage() {
+  attendanceAuditFile = null;
+  if (attendanceAuditUrl) URL.revokeObjectURL(attendanceAuditUrl);
+  attendanceAuditUrl = '';
+  document.getElementById('attendanceAuditImage').removeAttribute('src');
+  document.getElementById('attendanceAuditPreview').hidden = true;
+  document.getElementById('attendanceAuditSave').disabled = true;
+  document.getElementById('attendanceAuditShare').disabled = true;
+}
+function openAttendanceAudit() {
+  document.getElementById('attendanceAuditDate').value = dateToInput(todayStr());
+  bootstrap.Modal.getOrCreateInstance(document.getElementById('attendanceAuditModal')).show();
+  loadAttendanceAudit();
+}
+async function loadAttendanceAudit() {
+  const version = ++attendanceAuditVersion;
+  clearAttendanceAuditImage();
+  const output = document.getElementById('attendanceAuditStatus');
+  const list = document.getElementById('attendanceAuditRows');
+  list.replaceChildren();
+  const selected = document.getElementById('attendanceAuditDate').value;
+  if (!selected) { output.textContent = 'กรุณาเลือกวันที่'; return; }
+  const date = inputToThai(selected), year = currentYear;
+  output.textContent = 'กำลังตรวจทุกชั้นเรียน…';
+  try {
+    const [data,holidays] = await Promise.all([
+      api('getDashboardStats',{year,mode:'daily',date,month:selected.slice(5,7)}),
+      api('getHolidays',{year})
+    ]);
+    if (version !== attendanceAuditVersion) return;
+    if (!Array.isArray(data?.classes) || !data.classes.length) throw new Error('ไม่พบข้อมูลชั้นเรียน');
+    const holiday = (holidays || []).find(h => h.date === date);
+    const dow = new Date(selected+'T12:00:00').getDay();
+    const off = holiday?.type === 'holiday' || ((dow === 0 || dow === 6) && holiday?.type !== 'makeup');
+    const outside = termDates.start && termDates.end && (selected < dateToInput(termDates.start) || selected > dateToInput(termDates.end));
+    const future = selected > dateToInput(todayStr());
+    const note = off ? 'วันหยุด — แสดงข้อมูลที่มี ไม่ใช้เป็นการแจ้งเตือนค้างบันทึก' : outside ? 'อยู่นอกช่วงเทอมที่เลือก — โปรดตรวจสอบวันเรียน' : future ? 'วันที่ล่วงหน้า — ยังไม่ถึงวันบันทึก' : '';
+    const rows = auditRows(data.classes);
+    const pending = rows.filter(r => r.state === 'pending').length;
+    const partial = rows.filter(r => r.state === 'partial').length;
+    const done = rows.filter(r => r.state === 'done').length;
+    const stamp = new Date().toLocaleString('th-TH',{dateStyle:'short',timeStyle:'short'});
+    const summary = `ยังไม่บันทึก ${pending} ชั้น · บางส่วน ${partial} ชั้น · ครบแล้ว ${done} ชั้น`;
+    output.textContent = [note,summary,'ตรวจเมื่อ '+stamp].filter(Boolean).join(' • ');
+    for (const row of rows) {
+      const el = document.createElement('div'); el.className = 'audit-row '+row.state;
+      const name = document.createElement('strong'); name.textContent = row.name;
+      const info = document.createElement('div'); info.textContent = row.label;
+      const amount = document.createElement('small'); amount.textContent = `ลงสถานะ ${row.recorded}/${row.total} คน`;
+      info.append(amount); el.append(name,info); list.append(el);
+    }
+    // Prepare the file before a share click to preserve browser user activation.
+    const blob = await makeAttendanceAuditImage(rows,date,year,summary,note,stamp);
+    if (version !== attendanceAuditVersion) return;
+    attendanceAuditFile = new File([blob],`attendance-check-${selected}.png`,{type:'image/png'});
+    attendanceAuditUrl = URL.createObjectURL(blob);
+    document.getElementById('attendanceAuditImage').src = attendanceAuditUrl;
+    document.getElementById('attendanceAuditPreview').hidden = false;
+    document.getElementById('attendanceAuditSave').disabled = false;
+    document.getElementById('attendanceAuditShare').disabled = false;
+  } catch(e) {
+    if (version !== attendanceAuditVersion) return;
+    output.textContent = 'ตรวจไม่สำเร็จ: '+e.message+' กรุณากดตรวจอีกครั้ง';
+  }
+}
+async function makeAttendanceAuditImage(rows,date,year,summary,note,stamp) {
+  await document.fonts.ready;
+  const canvas = document.createElement('canvas');
+  canvas.width = 900; canvas.height = 360 + (note ? 70 : 0) + rows.length*78;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle='#fff';ctx.fillRect(0,0,canvas.width,canvas.height);
+  ctx.fillStyle='#702179';ctx.fillRect(0,0,900,170);
+  const draw = (text,x,y,size=26,color='#334155',weight=400,max=820) => {
+    ctx.font=weight+' '+size+'px "Prompt", sans-serif';ctx.fillStyle=color;ctx.fillText(text,x,y,max);
+  };
+  draw(sysConfig.school_name || 'โรงเรียนบ้านคลอง 14',40,52,30,'#fff',700);
+  draw('สรุปการบันทึกเช็คชื่อ',40,100,34,'#fff',700);
+  draw(thaiDateFull(date)+' • ปีการศึกษา '+year,40,142,24,'#fff');
+  draw(summary,40,215,26,'#702179',700);
+  let y=240;
+  if(note) { draw(note,40,y+32,23,'#92400e');y+=70; }
+  for(const row of rows) {
+    const colors={pending:['#fff1f2','#991b1b'],partial:['#fff7ed','#92400e'],done:['#f0fdf4','#166534'],empty:['#f1f5f9','#64748b'],invalid:['#fff7ed','#92400e']}[row.state];
+    ctx.fillStyle=colors[0];ctx.fillRect(30,y,840,68);
+    draw(row.name,50,y+43,28,colors[1],700,180);
+    draw(row.label,235,y+43,26,colors[1],500,325);
+    draw(row.recorded+'/'+row.total+' คน',610,y+43,26,colors[1],500,235);
+    y+=78;
+  }
+  draw('จำนวน = นักเรียนที่ลงสถานะแล้ว / นักเรียนทั้งหมด',40,y+38,24);
+  draw('ข้อมูล ณ '+stamp+' • กรุณาตรวจสอบอีกครั้งหลังบันทึก',40,y+80,22,'#64748b');
+  return new Promise((resolve,reject)=>canvas.toBlob(blob=>blob ? resolve(blob) : reject(new Error('สร้างภาพไม่สำเร็จ')),'image/png'));
+}
+function saveAttendanceAudit() {
+  if (!attendanceAuditFile || !attendanceAuditUrl) return;
+  const link=document.createElement('a');link.href=attendanceAuditUrl;link.download=attendanceAuditFile.name;
+  document.body.append(link);link.click();link.remove();
+}
+async function shareAttendanceAudit() {
+  if (!attendanceAuditFile) return;
+  try {
+    if (!navigator.share || !navigator.canShare?.({files:[attendanceAuditFile]})) {
+      showToast('เครื่องนี้แชร์ภาพโดยตรงไม่ได้ กรุณากดบันทึกภาพแล้วแนบใน LINE');return;
+    }
+    await navigator.share({files:[attendanceAuditFile],title:'สรุปการบันทึกเช็คชื่อ'});
+  } catch(e) {
+    if(e.name !== 'AbortError') showToast('แชร์ภาพไม่ได้ กรุณาบันทึกภาพแล้วแนบใน LINE','error');
+  }
+}
+document.getElementById('attendanceAuditModal').addEventListener('hidden.bs.modal',()=>{++attendanceAuditVersion;clearAttendanceAuditImage();});
+
 function openDashboard() {
   showPage('dashboardPage');
   if (!currentUser) document.getElementById('btnNavLogin').style.display = 'inline-block';
