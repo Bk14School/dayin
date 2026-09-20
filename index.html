@@ -8,9 +8,9 @@
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 <style>
 :root {
-  --primary: #0ea5e9;
-  --primary-light: #e0f2fe;
-  --primary-dark: #0284c7;
+  --primary: #9333b8;
+  --primary-light: #f3e8ff;
+  --primary-dark: #7e228f;
   --secondary: #64748b;
   --accent: #f59e0b;
   --accent-light: #fef3c7;
@@ -58,7 +58,7 @@ body { font-family: 'Prompt', sans-serif; background: var(--bg); color: var(--te
 .container-main { max-width: 1100px; margin: 0 auto; padding: 24px 16px; }
 
 /* ===== Login Page ===== */
-.login-wrap { min-height: calc(100vh - 62px); display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #e0f2fe 0%, #f8fafc 60%, #fef3c7 100%); padding: 20px; }
+.login-wrap { min-height: calc(100vh - 62px); display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #f3e8ff 0%, #f8fafc 60%, #fef3c7 100%); padding: 20px; }
 .login-card { background: #fff; border-radius: var(--radius); box-shadow: var(--shadow-lg); padding: 48px 40px; width: 100%; max-width: 400px; text-align: center; }
 .login-logo { width: 80px; height: 80px; border-radius: 50%; background: var(--primary); margin: 0 auto 20px; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 2rem; font-weight: 700; box-shadow: 0 8px 20px rgba(14,165,233,0.3); }
 .login-card h2 { font-size: 1.4rem; font-weight: 700; color: var(--text); margin-bottom: 4px; }
@@ -102,8 +102,8 @@ body { font-family: 'Prompt', sans-serif; background: var(--bg); color: var(--te
 .report-controls select, .report-controls input { border-radius: var(--radius-sm); border: 1px solid var(--border); padding: 8px 12px; font-family: inherit; font-size: 0.9rem; background: #fff; }
 .report-table-wrap { overflow-x: auto; border-radius: var(--radius-sm); border: 1px solid var(--border); }
 .report-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
-.report-table th { background: #1e3a5f; color: #fff; padding: 8px 12px; white-space: nowrap; font-weight: 600; text-align: center; border: 1px solid #2c4f7c; position: sticky; top: 0; }
-.report-table th.name-col { text-align: left; position: sticky; left: 0; background: #1e3a5f; z-index: 10; min-width: 160px; }
+.report-table th { background: #482354; color: #fff; padding: 8px 12px; white-space: nowrap; font-weight: 600; text-align: center; border: 1px solid #2c4f7c; position: sticky; top: 0; }
+.report-table th.name-col { text-align: left; position: sticky; left: 0; background: #482354; z-index: 10; min-width: 160px; }
 .report-table td { padding: 7px 10px; text-align: center; border: 1px solid var(--border); white-space: nowrap; }
 .report-table td.name-col { text-align: left; font-weight: 500; position: sticky; left: 0; background: #fff; z-index: 5; }
 .report-table tr:nth-child(even) td { background: #f8fafc; }
@@ -117,18 +117,18 @@ body { font-family: 'Prompt', sans-serif; background: var(--bg); color: var(--te
 
 /* ===================== Calendar ===================== */
 .cal-nav-btn { width:34px;height:34px;border-radius:8px;border:1.5px solid #cbd5e1;background:#fff;cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;transition:all .15s; }
-.cal-nav-btn:hover { background:#0ea5e9;border-color:#0ea5e9;color:#fff; }
+.cal-nav-btn:hover { background:#9333b8;border-color:#9333b8;color:#fff; }
 .cal-dot { display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:4px;vertical-align:middle; }
 .cal-grid { display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px; }
 .cal-day-name { text-align:center;font-size:.75rem;font-weight:700;color:#94a3b8;padding:4px 0; }
 .cal-cell { border-radius:10px;border:1.5px solid #e2e8f0;background:#fff;cursor:pointer;transition:all .18s;overflow:hidden;min-height:74px;padding:6px; position:relative; }
-.cal-cell:hover { border-color:#0ea5e9;box-shadow:0 2px 10px rgba(14,165,233,.2);transform:translateY(-1px); }
+.cal-cell:hover { border-color:#9333b8;box-shadow:0 2px 10px rgba(14,165,233,.2);transform:translateY(-1px); }
 .cal-cell.empty { border:none;background:transparent;cursor:default;pointer-events:none; }
-.cal-cell.today { border-color:#0ea5e9;background:#f0f9ff; }
+.cal-cell.today { border-color:#9333b8;background:#fcf5ff; }
 .cal-cell.has-data { border-color:#bbf7d0; }
 .cal-cell.weekend { background:#fafafa; }
 .cal-date { font-size:.85rem;font-weight:700;color:#374151;margin-bottom:4px; }
-.cal-date.today-num { color:#0ea5e9; }
+.cal-date.today-num { color:#9333b8; }
 .cal-dots { display:flex;flex-wrap:wrap;gap:2px;margin-top:2px; }
 .cal-dot-sm { width:8px;height:8px;border-radius:50%; }
 .cal-summary { font-size:.65rem;color:#6b7280;margin-top:4px;line-height:1.4; }
@@ -144,9 +144,9 @@ body { font-family: 'Prompt', sans-serif; background: var(--bg); color: var(--te
 .cal-date { font-size:1.05rem;margin-bottom:8px; }
 .cal-cell.has-data { background:#f0fdf4;border-color:#d1fae5; }
 .cal-cell.partial { background:#fffbeb;border-color:#fcd34d; }
-.cal-cell.today { outline:2px solid #0ea5e9;outline-offset:-2px; }
+.cal-cell.today { outline:2px solid #9333b8;outline-offset:-2px; }
 .cal-cell.streak3 { box-shadow:none !important; }
-.cal-cell:focus-visible { outline:3px solid #0284c7; }
+.cal-cell:focus-visible { outline:3px solid #7e228f; }
 .cal-check-state { font-size:.72rem;line-height:1.4;font-weight:500;color:#047857; }
 .cal-check-state.pending { color:#64748b;font-weight:400; }
 .cal-check-state.partial { color:#b45309; }
@@ -155,7 +155,7 @@ body { font-family: 'Prompt', sans-serif; background: var(--bg); color: var(--te
 .cal-note-badge { max-width:100%; }
 .cal-mode-tabs { display:flex;gap:4px;background:#eef2f6;padding:4px;border-radius:12px;margin-bottom:14px; }
 .cal-mode-tabs button { flex:1;border:0;border-radius:9px;padding:10px;background:transparent;color:#64748b;font:inherit;font-size:.88rem; }
-.cal-mode-tabs button[aria-pressed="true"] { background:white;color:#0369a1;font-weight:600;box-shadow:0 2px 6px #0f172a12; }
+.cal-mode-tabs button[aria-pressed="true"] { background:white;color:#702179;font-weight:600;box-shadow:0 2px 6px #0f172a12; }
 .cal-hr-toolbar { display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px;font-size:.75rem;color:#64748b; }
 .cal-hr-toolbar[hidden] { display:none; }
 @media(max-width:640px) {
@@ -179,7 +179,7 @@ body { font-family: 'Prompt', sans-serif; background: var(--bg); color: var(--te
 .cal-stu-row, .cal-stu-heading { display:grid;grid-template-columns:44px minmax(180px,1fr) repeat(5,52px);align-items:center;gap:8px;padding:12px 16px;min-width:580px; }
 .cal-stu-row { border-bottom:1px solid #edf2f7;background:#fff;min-height:68px; }
 .cal-stu-row:nth-child(odd) { background:#f8fafc; }
-.cal-stu-row:hover { background:#eff6ff; }
+.cal-stu-row:hover { background:#faf0fc; }
 .cal-stu-heading { position:sticky;top:0;z-index:1;background:#eaf1f8;color:#475569;font-size:.8rem;font-weight:600;border-bottom:1px solid #dbe4ee;text-align:center; }
 .cal-stu-heading .cal-name-heading { text-align:left; }
 #calDayStudents { max-height:420px;overflow:auto; }
@@ -231,17 +231,17 @@ body { font-family: 'Prompt', sans-serif; background: var(--bg); color: var(--te
 .cal-note-badge { font-size:.6rem; background:#fef9c3; color:#854d0e; border-radius:6px; padding:1px 5px; margin-top:2px; display:inline-block; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .cal-cell.holiday { background:#f1f5f9;border-color:#cbd5e1;cursor:default; }
 .cal-cell.holiday:hover { transform:none;box-shadow:none;border-color:#cbd5e1; }
-.cal-cell.makeup  { background:#eff6ff;border-color:#93c5fd; }
+.cal-cell.makeup  { background:#faf0fc;border-color:#93c5fd; }
 .cal-badge { display:inline-block;font-size:.65rem;padding:1px 6px;border-radius:10px;font-weight:700;margin-top:3px; }
 .cal-badge.holiday { background:#e2e8f0;color:#64748b; }
-.cal-badge.makeup  { background:#dbeafe;color:#1d4ed8; }
+.cal-badge.makeup  { background:#f2dcf7;color:#792889; }
 .cal-cell .cal-holiday-btn { opacity:0;position:absolute;top:4px;right:4px;background:none;border:none;cursor:pointer;font-size:.85rem;line-height:1;padding:2px;border-radius:4px;transition:opacity .15s; }
 .cal-cell:hover .cal-holiday-btn { opacity:1; }
 .month-btn { padding: 6px 14px; border-radius: 20px; border: 1.5px solid #cbd5e1; background: #fff; color: #374151; font-size: .82rem; font-weight: 600; cursor: pointer; transition: all .15s; font-family: inherit; }
-.month-btn:hover  { border-color: #0ea5e9; color: #0ea5e9; }
-.month-btn.active { background: #0ea5e9; border-color: #0ea5e9; color: #fff; box-shadow: 0 2px 8px rgba(14,165,233,.3); }
+.month-btn:hover  { border-color: #9333b8; color: #9333b8; }
+.month-btn.active { background: #9333b8; border-color: #9333b8; color: #fff; box-shadow: 0 2px 8px rgba(14,165,233,.3); }
 .month-btn.all    { background: #f1f5f9; border-color: #94a3b8; }
-.month-btn.all.active { background: #1e3a5f; border-color: #1e3a5f; color: #fff; }
+.month-btn.all.active { background: #482354; border-color: #482354; color: #fff; }
 
 .stat-card { background: white; border-radius: 12px; padding: 16px; box-shadow: var(--shadow); text-align: center; }
 .stat-num  { font-size: 2rem; font-weight: 800; line-height: 1; }
@@ -333,7 +333,7 @@ body { font-family: 'Prompt', sans-serif; background: var(--bg); color: var(--te
   /* ===== PIN Pad ===== */
 .pin-pad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; max-width: 240px; margin: 0 auto; }
 .pin-btn { background: #f8fafc; border: 2px solid #e2e8f0; border-radius: 16px; font-size: 1.6rem; font-weight: 700; color: #334155; padding: 12px 0; cursor: pointer; transition: all 0.1s; display: flex; align-items: center; justify-content: center; user-select: none; box-shadow: 0 4px 6px rgba(0,0,0,0.02); }
-.pin-btn:active { transform: scale(0.92); background: #e0f2fe; border-color: #0ea5e9; color: #0ea5e9; }
+.pin-btn:active { transform: scale(0.92); background: #f3e8ff; border-color: #9333b8; color: #9333b8; }
 .pin-btn.action { font-size: 1.2rem; background: #f1f5f9; border-color: #e2e8f0; color: #64748b; }
 .pin-btn.action.del:active { background: #fee2e2; border-color: #ef4444; color: #ef4444; }
 .pin-btn.action.clear:active { background: #fef3c7; border-color: #f59e0b; color: #f59e0b; }
@@ -358,7 +358,7 @@ body { font-family: 'Prompt', sans-serif; background: var(--bg); color: var(--te
 @media(max-width:640px) {
   #dashboardPage .report-table-wrap { display:none; }
   .dash-mobile { display:block; }
-  .dash-overall { background:#f0f9ff;border:1px solid #bae6fd;border-radius:14px;padding:16px;margin-bottom:16px; }
+  .dash-overall { background:#fcf5ff;border:1px solid #e9c6f3;border-radius:14px;padding:16px;margin-bottom:16px; }
   .dash-overall h3, .dash-class h3 { font-size:16px;font-weight:600;margin:0; }
   .dash-class { border:1px solid #e2e8f0;border-radius:14px;padding:14px;margin-bottom:12px; }
   .dash-class-head { display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:10px; }
@@ -467,6 +467,62 @@ body { font-family: 'Prompt', sans-serif; background: var(--bg); color: var(--te
   .toast-wrap { left:12px;right:12px;bottom:12px;max-width:calc(100% - 24px); }
   .toast-wrap .toast { min-width:0;max-width:100%;font-size:14px; }
 }
+/* Persian Lounge theme */
+:root {
+  --primary:#9333b8;--primary-dark:#702179;--primary-light:#f3e8ff;
+  --secondary:#746078;--bg:#f4eaf6;--text:#382b40;--text-muted:#786680;
+  --border:#e8d9ed;--shadow:0 10px 30px rgba(72,35,84,.09);
+  --shadow-lg:0 20px 48px rgba(72,35,84,.16);
+  --bs-primary:#9333b8;--bs-primary-rgb:147,51,184;
+}
+body { background:#f4eaf6; }
+body::before { content:'';position:fixed;inset:0;z-index:-1;pointer-events:none;background:linear-gradient(rgba(255,255,255,.28),rgba(255,255,255,.16)),url('assets/persian-lounge.png') center / cover no-repeat; }
+.login-wrap { background:transparent; }
+.app-nav { background:rgba(255,250,255,.96);border-bottom:1px solid #ead8ee;box-shadow:0 3px 18px #48235412; }
+.app-card,.login-card,.modal-content { background:rgba(255,253,255,.98);border-color:#ead8ee; }
+.brand-logo,.login-logo { background:linear-gradient(135deg,#a044c0,#941657);box-shadow:0 6px 16px #7e228f26; }
+.nav-btn,.mobile-nav-toggle { color:#702179;border-color:#e4cee9;background:#fffaff; }
+.nav-btn:hover,.mobile-nav-toggle:hover { color:#611870;background:#f3e8ff;border-color:#c58dd3; }
+.nav-btn.danger { color:#b91c1c;border-color:#fecaca; }
+.teacher-badge { background:#f3e8ff;color:#702179; }
+.pin-btn { color:#702179;background:#fcf7ff;border-color:#e9d8ef;box-shadow:0 3px 6px #48235408; }
+.pin-btn.action { color:#746078;background:#f5eef8;border-color:#e9d8ef; }
+.pin-btn:active { background:#efd9fa;border-color:#b45bcc; }
+.pin-dot { background:#ead9ef; }
+.pin-dot.filled { background:#9333b8;box-shadow:0 0 10px #9333b833; }
+.login-card p { color:#786680; }
+.btn-dashboard { color:#702179;background:#faf2fd;border-color:#ead2f0; }
+.btn-save,.btn-login { background:linear-gradient(135deg,#8c35ad,#981a66);box-shadow:0 4px 14px #7e228f30; }
+.btn-save:hover { box-shadow:0 6px 20px #7e228f40; }
+.btn-primary { --bs-btn-bg:#862a9c;--bs-btn-border-color:#862a9c;--bs-btn-hover-bg:#702179;--bs-btn-hover-border-color:#702179;--bs-btn-active-bg:#611870; }
+.form-control:focus,.form-select:focus { border-color:#bc70ca;box-shadow:0 0 0 3px #9333b81c; }
+.cal-mode-tabs { background:#f0e4f5; }
+.cal-mode-tabs button { color:#786680; }
+.cal-mode-tabs button[aria-pressed="true"] { color:#702179;background:#fff;box-shadow:0 2px 8px #70217914; }
+.cal-overview-tools,.cal-day-tools,.cal-day-footer,.cal-save-state { background:#faf5fc; }
+.cal-overview-tools,.cal-nav-btn,.cal-more-toggle,.dash-school-details { border-color:#e5d2eb;color:#702179; }
+.cal-stu-heading { background:#f1e4f7;color:#654271;border-color:#e5d2eb; }
+.cal-stu-row:nth-child(odd) { background:#fcf7fe; }
+.cal-stu-row:hover { background:#f5eafa; }
+.cal-day-name,.cal-legend,.cal-hr-toolbar { color:#786680; }
+.cal-cell:not(.has-data):not(.partial):not(.holiday):not(.weekend):not(.empty) { background:#fffcff;border-color:#e5d9eb; }
+.cal-cell.weekend,.cal-cell.holiday { background:#f2edf4;border-color:#e5dce9; }
+.cal-cell.today { outline-color:#a12b9e; }
+.cal-cell:hover { border-color:#b45bcc;box-shadow:0 2px 10px #9333b824; }
+.calendar-developer { color:#55375f;background:rgba(255,250,255,.9);border:1px solid #ead8ee;border-radius:16px;margin:0 0 16px; }
+.calendar-developer strong { color:#482354; }
+.month-btn.active { background:#702179;border-color:#702179;color:white; }
+.report-table th { background:#482354; }
+.dash-overall { background:#fbf2fe;border-color:#e5c5ee; }
+.dash-class { background:#fffaff;border-color:#ead8ee; }
+.dash-meta { color:#786680; }
+#dashboardPage .date-bar { background:linear-gradient(135deg,#702179,#a2368c) !important;color:#fff;border-color:#9b4bab; }
+#dashboardPage .date-nav input,#dashboardPage .date-nav select { background:#fff;color:#482354;color-scheme:light; }
+#homeroomModal .modal-header,#printHomeroomModal .modal-header { background:linear-gradient(135deg,#702179,#a2368c) !important;color:white !important; }
+#btnSaveHR { background:#862a9c;border-color:#862a9c;color:#fff !important; }
+#homeroomModal label:has(.hr-topic:checked) { border-color:#bf78cd;background:#f7eafb; }
+.hr-topic { accent-color:#9333b8; }
+@media print { body::before { display:none; } }
 </style>
 </head>
 <body>
@@ -481,7 +537,7 @@ body { font-family: 'Prompt', sans-serif; background: var(--bg); color: var(--te
     <button id="mobileNavToggle" class="mobile-nav-toggle" type="button" aria-expanded="false" aria-controls="mobileNavItems" onclick="const open=this.getAttribute('aria-expanded')!=='true';this.setAttribute('aria-expanded',open);document.getElementById('mobileNavItems').classList.toggle('mobile-open',open);">☰ เมนู</button>
     <div class="nav-info" id="mobileNavItems">
       <div class="teacher-badge" id="teacherBadge">🎓 ครูสมศรี • ป.3</div>
-        <select id="navTermSelector" class="form-select form-select-sm" style="display:none; width:auto; font-weight:bold; color:#0284c7; border-color:#0ea5e9;" onchange="changeActiveTerm(this.value)">
+        <select id="navTermSelector" class="form-select form-select-sm" style="display:none; width:auto; font-weight:bold; color:#7e228f; border-color:#9333b8;" onchange="changeActiveTerm(this.value)">
          <option value="1">เทอม 1</option>
          <option value="2">เทอม 2</option>
       </select>
@@ -562,7 +618,7 @@ body { font-family: 'Prompt', sans-serif; background: var(--bg); color: var(--te
         <div class="card-title mb-0">📊 สถิติภาพรวมโรงเรียน</div>
         <button class="nav-btn" onclick="returnToCalendar()">← กลับปฏิทิน</button>
       </div>
-      <div class="date-bar" style="background: linear-gradient(135deg, #1e3a5f, #3b82f6);">
+      <div class="date-bar" style="background: linear-gradient(135deg, #482354, #ad3d9c);">
         <div>
           <div class="date-txt" id="dashDateDisplay">กำลังโหลด...</div>
           <div class="class-txt">ปีการศึกษา <span id="dashYearDisplay">...</span></div>
@@ -594,13 +650,13 @@ body { font-family: 'Prompt', sans-serif; background: var(--bg); color: var(--te
         <table class="report-table">
           <thead>
             <tr>
-              <th style="background:#1e3a5f; width:120px;">ระดับชั้น</th>
+              <th style="background:#482354; width:120px;">ระดับชั้น</th>
               <th style="background:#374151;" id="dashColTotal">นักเรียนทั้งหมด</th>
               <th style="background:#065f46;">มา</th>
               <th style="background:#991b1b;">ขาด</th>
               <th style="background:#92400e;">ลา/ป่วย</th>
               <th style="background:#3730a3;">สาย</th>
-              <th style="background:#1e3a5f;">% มาเรียน</th>
+              <th style="background:#482354;">% มาเรียน</th>
             </tr>
           </thead>
           <tbody id="dashTbody">
@@ -660,7 +716,7 @@ body { font-family: 'Prompt', sans-serif; background: var(--bg); color: var(--te
       <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
         <div class="card-title mb-0">🏆 สรุปเวลาเรียน (รายเทอม / ทั้งปี)</div>
         <div class="d-flex gap-2">
-          <button class="nav-btn" onclick="printSummaryReport()" style="background:linear-gradient(135deg,#0ea5e9,#0284c7);color:#fff;border-color:#0284c7;">🖨️ พิมพ์ PDF สรุป</button>
+          <button class="nav-btn" onclick="printSummaryReport()" style="background:linear-gradient(135deg,#9333b8,#7e228f);color:#fff;border-color:#7e228f;">🖨️ พิมพ์ PDF สรุป</button>
         </div>
       </div>
       <div class="report-controls" style="align-items:flex-end;">
@@ -685,15 +741,15 @@ body { font-family: 'Prompt', sans-serif; background: var(--bg); color: var(--te
         <table class="report-table" id="sumTable">
           <thead>
             <tr>
-              <th style="min-width:40px; background:#1e3a5f;">#</th>
-              <th style="min-width:80px; background:#1e3a5f;">รหัส</th>
-              <th class="name-col" style="background:#1e3a5f;">ชื่อ-นามสกุล</th>
+              <th style="min-width:40px; background:#482354;">#</th>
+              <th style="min-width:80px; background:#482354;">รหัส</th>
+              <th class="name-col" style="background:#482354;">ชื่อ-นามสกุล</th>
               <th style="background:#374151; color:#fff;">วันเรียนเต็ม</th>
               <th style="background:#065f46; color:#fff;">มาเรียน (วัน)</th>
               <th style="background:#991b1b; color:#fff;">ขาด (วัน)</th>
               <th style="background:#92400e; color:#fff;">ลา/ป่วย (วัน)</th>
               <th style="background:#3730a3; color:#fff;">สาย (วัน)</th>
-              <th style="background:#1e3a5f; color:#fff;">ร้อยละ (%)</th>
+              <th style="background:#482354; color:#fff;">ร้อยละ (%)</th>
             </tr>
           </thead>
           <tbody id="sumBody">
@@ -720,7 +776,7 @@ body { font-family: 'Prompt', sans-serif; background: var(--bg); color: var(--te
       <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
         <div class="cal-month-nav d-flex align-items-center gap-2">
           <button class="cal-nav-btn" onclick="calChangeMonth(-1)" title="เดือนก่อนหน้า">&#9664;</button>
-          <select id="calMonthDropdown" class="form-select form-select-lg fw-bold text-center" style="width:auto; min-width:180px; border:none; background-color:transparent; font-size:1.15rem; color:#1e3a5f; cursor:pointer;" onchange="calSelectMonth(this.value)"></select>
+          <select id="calMonthDropdown" class="form-select form-select-lg fw-bold text-center" style="width:auto; min-width:180px; border:none; background-color:transparent; font-size:1.15rem; color:#482354; cursor:pointer;" onchange="calSelectMonth(this.value)"></select>
           <button class="cal-nav-btn" onclick="calChangeMonth(1)" title="เดือนถัดไป">&#9654;</button>
         </div>
         <div class="calendar-actions d-flex gap-2 align-items-center flex-wrap">
@@ -733,7 +789,7 @@ body { font-family: 'Prompt', sans-serif; background: var(--bg); color: var(--te
       <details class="cal-overview-tools">
       <summary>เครื่องมือ · รายงาน · สรุปวันเรียน</summary>
       <!-- กล่องสรุปวันเรียนตรงนี้ -->
-      <div id="calDaysSummaryText" class="w-100 mb-2 px-3 py-2 rounded-3" style="display:none; background: #f0f9ff; border: 1px solid #bae6fd; color: #0284c7; font-size: 0.9rem; justify-content: space-between; align-items: center; flex-wrap: wrap;"></div>
+      <div id="calDaysSummaryText" class="w-100 mb-2 px-3 py-2 rounded-3" style="display:none; background: #fcf5ff; border: 1px solid #e9c6f3; color: #7e228f; font-size: 0.9rem; justify-content: space-between; align-items: center; flex-wrap: wrap;"></div>
       <!-- วางไว้หลัง calDaysSummaryText -->
 <div id="missingAttendanceAlert" class="alert alert-warning" style="display:none; margin-bottom:15px; border-left: 5px solid #f59e0b;">
   <div style="font-weight:700; color:#92400e; margin-bottom:5px;">⚠️ แจ้งเตือน: มีวันที่ยังไม่ได้เช็คชื่อในเดือนนี้</div>
@@ -787,7 +843,7 @@ body { font-family: 'Prompt', sans-serif; background: var(--bg); color: var(--te
         <p style="color:#6b7280;font-size:.9rem;">เลือกประเภทวัน:</p>
         <div class="d-flex flex-column gap-2">
           <button class="holiday-type-btn" onclick="calMarkHoliday('holiday')" style="background:#f1f5f9;border:2px solid #cbd5e1;border-radius:12px;padding:12px 16px;text-align:left;cursor:pointer;font-family:inherit;font-size:.95rem;">🚫 <b>วันหยุดพิเศษ</b><br><span style="font-size:.8rem;color:#64748b;">ไม่มีการเรียนการสอน ไม่นับ % มาเรียน</span></button>
-          <button class="holiday-type-btn" onclick="calMarkHoliday('makeup')" style="background:#eff6ff;border:2px solid #93c5fd;border-radius:12px;padding:12px 16px;text-align:left;cursor:pointer;font-family:inherit;font-size:.95rem;">📚 <b>วันเรียนชดเชย</b><br><span style="font-size:.8rem;color:#1d4ed8;">เปิดให้เช็คชื่อได้ (แม้เป็นเสาร์/อาทิตย์)</span></button>
+          <button class="holiday-type-btn" onclick="calMarkHoliday('makeup')" style="background:#faf0fc;border:2px solid #93c5fd;border-radius:12px;padding:12px 16px;text-align:left;cursor:pointer;font-family:inherit;font-size:.95rem;">📚 <b>วันเรียนชดเชย</b><br><span style="font-size:.8rem;color:#792889;">เปิดให้เช็คชื่อได้ (แม้เป็นเสาร์/อาทิตย์)</span></button>
           <button class="holiday-type-btn" id="calRemoveHolidayBtn" onclick="calRemoveHoliday()" style="background:#fff5f5;border:2px solid #fca5a5;border-radius:12px;padding:12px 16px;text-align:left;cursor:pointer;font-family:inherit;font-size:.95rem;display:none;">↩️ <b>กลับเป็นวันเรียนปกติ</b></button>
         </div>
         <div class="mt-3"><label style="font-size:.85rem;color:#374151;">หมายเหตุ (ไม่บังคับ)</label><input type="text" id="calHolidayNote" placeholder="เช่น วันสงกรานต์, เรียนชดเชยวันจันทร์" class="form-control mt-1" style="font-family:inherit;"></div>
@@ -799,7 +855,7 @@ body { font-family: 'Prompt', sans-serif; background: var(--bg); color: var(--te
 <div class="modal fade" id="calDayModal" tabindex="-1">
   <div class="modal-dialog modal-dialog-centered modal-lg">
     <div class="modal-content" style="border-radius:16px;overflow:hidden;">
-      <div class="modal-header" style="background:linear-gradient(135deg,#1e3a5f,#0ea5e9);color:white;border:none;">
+      <div class="modal-header" style="background:linear-gradient(135deg,#482354,#9333b8);color:white;border:none;">
         <h5 class="modal-title" id="calDayModalTitle" style="font-weight:700;"></h5>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
       </div>
@@ -807,7 +863,7 @@ body { font-family: 'Prompt', sans-serif; background: var(--bg); color: var(--te
         <div class="cal-day-tools border-bottom">
         <button type="button" class="cal-more-toggle" aria-expanded="false" aria-controls="calDayTools" onclick="const expanded = this.getAttribute('aria-expanded') !== 'true'; this.setAttribute('aria-expanded', expanded); document.getElementById('calDayTools').classList.toggle('is-open', expanded);">เพิ่มเติม · พิมพ์ / โฮมรูม ▾</button>
         <div id="calDayTools" class="d-flex gap-2 p-2 flex-wrap align-items-center">
-          <button class="nav-btn" onclick="printDailyAttendanceProfessional()" style="background:linear-gradient(135deg,#0ea5e9,#0284c7);color:#fff;border-color:#0284c7;font-size:0.8rem;">🖨️ พิมพ์เช็คชื่อรายวัน</button>
+          <button class="nav-btn" onclick="printDailyAttendanceProfessional()" style="background:linear-gradient(135deg,#9333b8,#7e228f);color:#fff;border-color:#7e228f;font-size:0.8rem;">🖨️ พิมพ์เช็คชื่อรายวัน</button>
           <button class="nav-btn" onclick="openHomeroomModal()" style="background:linear-gradient(135deg,#fef3c7,#fde68a);color:#92400e;border-color:#fcd34d;font-size:0.8rem;">📝 บันทึกโฮมรูม</button>
           <button class="nav-btn" onclick="openPrintHomeroomModal()" style="background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;border-color:#d97706;font-size:0.8rem;">🗣️ พิมพ์โฮมรูม</button>
         </div>
@@ -850,7 +906,7 @@ body { font-family: 'Prompt', sans-serif; background: var(--bg); color: var(--te
 <div class="modal fade" id="configModal" tabindex="-1">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content">
-      <div class="modal-header" style="background:#1e3a5f; color:#fff;"><h5 class="modal-title fw-bold">⚙️ ตั้งค่าปีการศึกษา</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
+      <div class="modal-header" style="background:#482354; color:#fff;"><h5 class="modal-title fw-bold">⚙️ ตั้งค่าปีการศึกษา</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
       <div class="modal-body">
 <div class="mb-3">
   <label class="form-label fw-semibold">ปีการศึกษา (พ.ศ.)</label>
@@ -1452,13 +1508,13 @@ function printDashboard() {
   const sumPct = sumTotal ? Math.round((sumP / sumTotal) * 100) : 0;
 
   const tableHead = `<tr>
-    <th style="background:#1e3a5f;color:#fff;">ระดับชั้น</th>
+    <th style="background:#482354;color:#fff;">ระดับชั้น</th>
     <th style="background:#374151;color:#fff;">${mode==='monthly'?'เป้าหมาย (คน×วัน)':'นักเรียนทั้งหมด (คน)'}</th>
     <th style="background:#065f46;color:#fff;">มา</th>
     <th style="background:#991b1b;color:#fff;">ขาด</th>
     <th style="background:#92400e;color:#fff;">ลา/ป่วย</th>
     <th style="background:#3730a3;color:#fff;">สาย</th>
-    <th style="background:#1e3a5f;color:#fff;">% มาเรียน</th>
+    <th style="background:#482354;color:#fff;">% มาเรียน</th>
   </tr>`;
 
   const tableBody = rowsHtml + `<tr style="background:#f1f5f9; font-weight:bold; font-size:12px;">
@@ -1487,19 +1543,19 @@ function printDashboard() {
     }).join('');
 
     extraContent = `
-      <div style="margin-top:15px; margin-bottom:6px; font-size:13px; font-weight:700; color:#1e3a5f;">
+      <div style="margin-top:15px; margin-bottom:6px; font-size:13px; font-weight:700; color:#482354;">
         📅 สรุปสถิติภาพรวมโรงเรียนแยกรายวัน ตลอดเดือน
       </div>
       <table>
         <thead>
           <tr>
-            <th style="background:#1e3a5f;color:#fff;">วันที่</th>
+            <th style="background:#482354;color:#fff;">วันที่</th>
             <th style="background:#374151;color:#fff;">เป้าหมาย (คน)</th>
             <th style="background:#065f46;color:#fff;">มา</th>
             <th style="background:#991b1b;color:#fff;">ขาด</th>
             <th style="background:#92400e;color:#fff;">ลา/ป่วย</th>
             <th style="background:#3730a3;color:#fff;">สาย</th>
-            <th style="background:#1e3a5f;color:#fff;">% มาเรียน</th>
+            <th style="background:#482354;color:#fff;">% มาเรียน</th>
           </tr>
         </thead>
         <tbody>${dailyRowsHtml}</tbody>
@@ -1813,7 +1869,7 @@ function renderReport(data) {
   } else alertBox.style.display='none';
 
   head.innerHTML = `<tr>
-    <th style="min-width:36px; position:sticky; left:0; z-index:11; background:#1e3a5f;">#</th>
+    <th style="min-width:36px; position:sticky; left:0; z-index:11; background:#482354;">#</th>
     <th class="name-col" style="left:36px; z-index:11;">ชื่อ-นามสกุล</th>
     ${dates.map(d=>`<th title="${d}">${d.substring(0,5)}</th>`).join('')}
     <th style="background:#065f46;color:#fff;">มา</th><th style="background:#991b1b;color:#fff;">ขาด</th><th style="background:#92400e;color:#fff;">ลา/ป่วย</th><th style="background:#3730a3;color:#fff;">สาย</th><th style="background:#374151;color:#fff;">%มา</th>
@@ -2200,7 +2256,7 @@ function renderCalendar() {
 
     html += `<div class="${cellClass}" ${clickable} tabindex="0" role="button" aria-label="วันที่ ${d} ${THAI_MONTHS_CAL[calMonth]} ${calYear}, ${isHoliday || (isWeekend && !isMakeup) ? 'วันหยุด' : calMode === 'homeroom' ? (calHomeroomState !== 'ready' ? 'กำลังโหลดหรือโหลดไม่สำเร็จ' : hrSaved ? 'โฮมรูมบันทึกแล้ว' : 'โฮมรูมยังไม่บันทึก') : hasData ? 'เช็คแล้ว '+checkedCount+' จาก '+calStudents.length+' คน' : 'ยังไม่เช็ค'}" onkeydown="if(event.target===this && (event.key==='Enter' || event.key===' ')){event.preventDefault();this.click();}">
       ${holBtn}
-      <div class="cal-date ${isToday ? 'today-num' : ''}">${d}${isToday ? ' <span class="cal-today-label" style="font-size:.6rem;color:#0ea5e9;">วันนี้</span>' : ''}</div>
+      <div class="cal-date ${isToday ? 'today-num' : ''}">${d}${isToday ? ' <span class="cal-today-label" style="font-size:.6rem;color:#9333b8;">วันนี้</span>' : ''}</div>
       ${cellContent}${noteBadge}
     </div>`;
 
@@ -2438,11 +2494,11 @@ function buildPrintPage({school,cls,currentYear,printDate,title,subTitle,orienta
     @page { size: A4 ${orientation}; margin: 10mm 8mm; }
     * { box-sizing: border-box; }
     body { font-family:'Sarabun',sans-serif; font-size:11px; margin:0; padding:0; color:#111; }
-    .print-header { display:flex; align-items:center; justify-content:space-between; border-bottom:2px solid #1e3a5f; padding-bottom:8px; margin-bottom:10px; }
-    .print-header .school { font-size:15px; font-weight:700; color:#1e3a5f; }
+    .print-header { display:flex; align-items:center; justify-content:space-between; border-bottom:2px solid #482354; padding-bottom:8px; margin-bottom:10px; }
+    .print-header .school { font-size:15px; font-weight:700; color:#482354; }
     .print-header .sub    { font-size:11px; color:#555; margin-top:2px; }
     .print-header .stamp  { text-align:right; font-size:10px; color:#888; }
-    .print-title { text-align:center; font-size:13px; font-weight:700; margin-bottom:8px; color:#1e3a5f; }
+    .print-title { text-align:center; font-size:13px; font-weight:700; margin-bottom:8px; color:#482354; }
     table { width:100%; border-collapse:collapse; table-layout:auto; }
     th,td { border:1px solid #e2e8f0; padding:4px 5px; }
     th    { font-size:10px; font-weight:600; }
@@ -2457,7 +2513,7 @@ function buildPrintPage({school,cls,currentYear,printDate,title,subTitle,orienta
   </style></head><body>
   <div class="print-header"><div><div class="school">${school}</div><div class="sub">${subTitle}</div></div><div class="stamp">พิมพ์วันที่ ${printDate}</div></div>
   <div class="print-title">${title}</div>
-  <div style="font-size:13px; font-weight:700; color:#1e3a5f; margin-bottom:6px;">🏫 สรุปสถิติภาพรวมแยกตามระดับชั้น</div>
+  <div style="font-size:13px; font-weight:700; color:#482354; margin-bottom:6px;">🏫 สรุปสถิติภาพรวมแยกตามระดับชั้น</div>
   <table><thead>${tableHead}</thead><tbody>${tableBody}</tbody></table>
   ${extraContent}
   <div class="print-summary">${summary}</div>
@@ -2572,14 +2628,14 @@ function printCalMonth() {
 
   const dateHeaders = schoolDates.map(ds=>{
     const p=ds.split('/'); const dow=new Date(parseInt(p[2])-543,parseInt(p[1])-1,parseInt(p[0])).getDay();
-    return `<th style="background:#0ea5e9;color:#fff;font-size:8px;padding:2px 1px;min-width:15px;width:15px;text-align:center;"><div>${parseInt(p[0])}</div><div style="opacity:.8;">${DAY_NAMES[dow]}</div></th>`;
+    return `<th style="background:#9333b8;color:#fff;font-size:8px;padding:2px 1px;min-width:15px;width:15px;text-align:center;"><div>${parseInt(p[0])}</div><div style="opacity:.8;">${DAY_NAMES[dow]}</div></th>`;
   }).join('');
 
   const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>รายงาน ${cls} ${THAI_MONTHS_CAL[calMonth]} ${calYear}</title>
-  <style>@import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&display=swap');@page { size: A4 landscape; margin: 8mm; }*{box-sizing:border-box;}body{font-family:'Sarabun',sans-serif;font-size:11px;margin:0;padding:0;}.hdr{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid #1e3a5f;padding-bottom:6px;margin-bottom:8px;}.hdr-school{font-size:14px;font-weight:700;color:#1e3a5f;}.hdr-sub{font-size:11px;color:#555;margin-top:2px;}.hdr-stamp{font-size:10px;color:#888;text-align:right;}.title{text-align:center;font-size:13px;font-weight:700;margin-bottom:6px;color:#1e3a5f;}table{width:100%;border-collapse:collapse;}th,td{border:1px solid #e2e8f0;padding:2px 3px;}td:nth-child(2){white-space:nowrap;max-width:130px;overflow:hidden;text-overflow:ellipsis;}.summary{margin-top:7px;font-size:10px;color:#555;border-top:1px solid #e2e8f0;padding-top:5px;}.hol-note{margin-top:4px;font-size:9px;color:#92400e;}.sign-row{display:flex;justify-content:space-around;margin-top:16px;}.sign-box{text-align:center;font-size:10px;}.sign-line{border-bottom:1px solid #666;width:150px;margin:0 auto 3px;padding-top:22px;}@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact;}}</style></head><body>
+  <style>@import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&display=swap');@page { size: A4 landscape; margin: 8mm; }*{box-sizing:border-box;}body{font-family:'Sarabun',sans-serif;font-size:11px;margin:0;padding:0;}.hdr{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid #482354;padding-bottom:6px;margin-bottom:8px;}.hdr-school{font-size:14px;font-weight:700;color:#482354;}.hdr-sub{font-size:11px;color:#555;margin-top:2px;}.hdr-stamp{font-size:10px;color:#888;text-align:right;}.title{text-align:center;font-size:13px;font-weight:700;margin-bottom:6px;color:#482354;}table{width:100%;border-collapse:collapse;}th,td{border:1px solid #e2e8f0;padding:2px 3px;}td:nth-child(2){white-space:nowrap;max-width:130px;overflow:hidden;text-overflow:ellipsis;}.summary{margin-top:7px;font-size:10px;color:#555;border-top:1px solid #e2e8f0;padding-top:5px;}.hol-note{margin-top:4px;font-size:9px;color:#92400e;}.sign-row{display:flex;justify-content:space-around;margin-top:16px;}.sign-box{text-align:center;font-size:10px;}.sign-line{border-bottom:1px solid #666;width:150px;margin:0 auto 3px;padding-top:22px;}@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact;}}</style></head><body>
   <div class="hdr"><div><div class="hdr-school">${school}</div><div class="hdr-sub">ชั้น ${cls} | ${THAI_MONTHS_CAL[calMonth]} ${calYear} | ปีการศึกษา ${currentYear}</div></div><div class="hdr-stamp">พิมพ์วันที่ ${printDate}</div></div>
   <div class="title">สรุปการเข้าเรียนประจำเดือน ${THAI_MONTHS_CAL[calMonth]} ${calYear}</div>
-  <table><thead><tr><th rowspan="2" style="width:22px;background:#1e3a5f;color:#fff;">#</th><th rowspan="2" style="min-width:120px;background:#1e3a5f;color:#fff;">ชื่อ-นามสกุล</th>${dateHeaders}<th style="background:#065f46;color:#fff;font-size:9px;">มา</th><th style="background:#991b1b;color:#fff;font-size:9px;">ขาด</th><th style="background:#92400e;color:#fff;font-size:9px;">ลา/ป่วย</th><th style="background:#3730a3;color:#fff;font-size:9px;">สาย</th><th style="background:#374151;color:#fff;font-size:9px;">%มา</th></tr></thead><tbody>${bodyRows}</tbody></table>
+  <table><thead><tr><th rowspan="2" style="width:22px;background:#482354;color:#fff;">#</th><th rowspan="2" style="min-width:120px;background:#482354;color:#fff;">ชื่อ-นามสกุล</th>${dateHeaders}<th style="background:#065f46;color:#fff;font-size:9px;">มา</th><th style="background:#991b1b;color:#fff;font-size:9px;">ขาด</th><th style="background:#92400e;color:#fff;font-size:9px;">ลา/ป่วย</th><th style="background:#3730a3;color:#fff;font-size:9px;">สาย</th><th style="background:#374151;color:#fff;font-size:9px;">%มา</th></tr></thead><tbody>${bodyRows}</tbody></table>
   <div class="summary">รวม: มา <b>${totalP}</b> | ขาด <b>${totalA}</b> | ลา/ป่วย <b>${totalL}</b> | สาย <b>${totalLa}</b> &nbsp;|&nbsp;นักเรียน <b>${calStudents.length}</b> คน | วันเรียน <b>${schoolDates.length}</b> วัน${alertNames.length?` &nbsp;|&nbsp; ⚠️ ขาดเกิน ${threshold} วัน: <b>${alertNames.join(', ')}</b>`:''}</div>
   <div class="sign-row"><div class="sign-box"><div class="sign-line"></div>ครูผู้สอน / ครูประจำชั้น</div><div class="sign-box"><div class="sign-line"></div>หัวหน้าฝ่ายวิชาการ</div><div class="sign-box"><div class="sign-line"></div>ผู้อำนวยการโรงเรียน</div></div>
   <script>window.onload=()=>window.print();<\/script></body></html>`;
@@ -2702,20 +2758,20 @@ function printCalStudent() {
     @page { size: A4 portrait; margin: 12mm; } * { box-sizing: border-box; }
     body { font-family: 'Sarabun', sans-serif; margin: 0; background: #e5e7eb; padding: 20px; }
     .page { width: 794px; min-height: 1123px; margin: 0 auto; background: #ffffff; padding: 28px; }
-    .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 3px solid #0ea5e9; padding-bottom: 12px; margin-bottom: 16px; }
+    .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 3px solid #9333b8; padding-bottom: 12px; margin-bottom: 16px; }
     .doc-title { text-align: center; font-size: 20px; font-weight: 800; margin-bottom: 8px; }
     .meta-wrap { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 18px; margin-bottom: 16px; font-size: 14px; }
     .meta-item { background: #f8fafc; border: 1px solid #e2e8f0; padding: 10px 12px; }
     table { width: 100%; border-collapse: collapse; margin-top: 4px; } th, td { border: 1px solid #cbd5e1; padding: 8px 10px; font-size: 13px; }
-    th { background: #1e3a5f; color: #fff; font-weight: 700; } .center { text-align: center; } .left { text-align: left; }
+    th { background: #482354; color: #fff; font-weight: 700; } .center { text-align: center; } .left { text-align: left; }
     .status-badge { display: inline-flex; align-items: center; justify-content: center; min-width: 34px; height: 30px; border-radius: 999px; border: 1.5px solid; font-weight: 800; font-size: 13px; }
     .print-actions { width: 794px; margin: 14px auto 0; display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
     .btn { border: none; border-radius: 10px; padding: 10px 16px; font-weight: 700; cursor: pointer; }
-    .btn-print { background: #0ea5e9; color: #fff; } .btn-save { background: #7c3aed; color: #fff; } .btn-close { background: #e5e7eb; }
+    .btn-print { background: #9333b8; color: #fff; } .btn-save { background: #7c3aed; color: #fff; } .btn-close { background: #e5e7eb; }
     @media print { body { background: #fff; padding: 0; } .print-actions { display: none !important; } .page { width: 100%; min-height: auto; box-shadow: none; margin: 0; } }
   </style></head><body>
   <div class="page" id="reportCapture">
-    <div class="header"><div><h2 style="margin:0;color:#0ea5e9;">${school}</h2><div style="font-size:13px;color:#475569;">รายงานสรุปการเช็คชื่อนักเรียนประจำวัน</div></div><div style="text-align:right;font-size:13px;">วันที่พิมพ์ ${printDate}<br>ปีการศึกษา ${term}</div></div>
+    <div class="header"><div><h2 style="margin:0;color:#9333b8;">${school}</h2><div style="font-size:13px;color:#475569;">รายงานสรุปการเช็คชื่อนักเรียนประจำวัน</div></div><div style="text-align:right;font-size:13px;">วันที่พิมพ์ ${printDate}<br>ปีการศึกษา ${term}</div></div>
     <div class="doc-title">รายงานการมาเรียนประจำวัน<br><span style="font-size:14px;font-weight:normal;">${thaiDateFull(targetDate)}</span></div>
     <div class="meta-wrap"><div class="meta-item"><b>ชั้นเรียน:</b> ${cls}</div><div class="meta-item"><b>ครูผู้บันทึก:</b> ${teacher}</div><div class="meta-item"><b>สถานะรวม:</b> ${summaryText}</div><div class="meta-item"><b>มาเรียนวันนี้:</b> ${attendancePct}%</div></div>
     <table><thead><tr><th style="width:50px;">ลำดับ</th><th style="width:110px;">รหัส</th><th>ชื่อ-นามสกุล</th><th style="width:90px;">ชั้น</th><th style="width:70px;">รหัส</th><th style="width:130px;">สถานะ</th></tr></thead><tbody>${rows}</tbody></table>
@@ -2832,7 +2888,7 @@ async function printDailyHomeroomReport() {
     return; 
   }
   // ใส่หน้า Loading รอไว้
-  printWindow.document.write('<div style="text-align:center; padding:50px; font-family:sans-serif; color:#1e3a5f;"><h2>⏳ กำลังเตรียมข้อมูลพิมพ์...</h2><p>กรุณารอสักครู่</p></div>');
+  printWindow.document.write('<div style="text-align:center; padding:50px; font-family:sans-serif; color:#482354;"><h2>⏳ กำลังเตรียมข้อมูลพิมพ์...</h2><p>กรุณารอสักครู่</p></div>');
 
   showProgress('กำลังดึงข้อมูล...');
   try {
@@ -2884,7 +2940,7 @@ async function printMonthlyHomeroomReport(month, displayYear) {
     showToast('⚠️ กรุณาอนุญาต Popup (ป๊อปอัป) ในเบราว์เซอร์ก่อนทำการพิมพ์', 'error'); 
     return; 
   }
-  printWindow.document.write('<div style="text-align:center; padding:50px; font-family:sans-serif; color:#1e3a5f;"><h2>📊 กำลังดึงข้อมูลรายงานรายเดือน...</h2><p>อาจใช้เวลาสักครู่ กรุณารอ</p></div>');
+  printWindow.document.write('<div style="text-align:center; padding:50px; font-family:sans-serif; color:#482354;"><h2>📊 กำลังดึงข้อมูลรายงานรายเดือน...</h2><p>อาจใช้เวลาสักครู่ กรุณารอ</p></div>');
 
   showProgress('กำลังดึงข้อมูล...');
   try {
@@ -3122,7 +3178,7 @@ function updateCalDaysSummary() {
   // 2. แสดงสรุปด้านบนปฏิทิน
   summaryEl.innerHTML = `
     <span>🏫 <b>รวมวันเรียนเทอม ${currentTerm}/${currentYear} :</b> ${stats.total} วัน</span>
-    <span>📅 <b>วันเรียนเดือนนี้ :</b> <span style="font-size:1.1rem; font-weight:800; color:#0369a1;">${currentMonthDays}</span> วัน</span>
+    <span>📅 <b>วันเรียนเดือนนี้ :</b> <span style="font-size:1.1rem; font-weight:800; color:#702179;">${currentMonthDays}</span> วัน</span>
   `;
   summaryEl.style.display = 'flex';
 }
@@ -3436,15 +3492,15 @@ function printSummaryReport() {
   });
 
   const tableHead = `<tr>
-    <th style="background:#1e3a5f; color:#fff; width:40px;">ที่</th>
-    <th style="background:#1e3a5f; color:#fff; width:80px;">รหัส</th>
-    <th style="background:#1e3a5f; color:#fff;">ชื่อ-นามสกุล</th>
+    <th style="background:#482354; color:#fff; width:40px;">ที่</th>
+    <th style="background:#482354; color:#fff; width:80px;">รหัส</th>
+    <th style="background:#482354; color:#fff;">ชื่อ-นามสกุล</th>
     <th style="background:#374151; color:#fff;">เวลาเรียนเต็ม</th>
     <th style="background:#065f46; color:#fff;">มา</th>
     <th style="background:#991b1b; color:#fff;">ขาด</th>
     <th style="background:#92400e; color:#fff;">ลา/ป่วย</th>
     <th style="background:#3730a3; color:#fff;">สาย</th>
-    <th style="background:#1e3a5f; color:#fff;">ร้อยละ (%)</th>
+    <th style="background:#482354; color:#fff;">ร้อยละ (%)</th>
   </tr>`;
 
   // เรียกใช้ฟังก์ชันสร้าง Print template ของเดิมที่มีอยู่แล้ว
