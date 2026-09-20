@@ -905,11 +905,9 @@ body::before { content:'';position:fixed;inset:0;z-index:-1;pointer-events:none;
       </div>
       <div class="modal-body p-0">
         <div class="cal-day-tools border-bottom">
-        <button type="button" class="cal-more-toggle" aria-expanded="false" aria-controls="calDayTools" onclick="const expanded = this.getAttribute('aria-expanded') !== 'true'; this.setAttribute('aria-expanded', expanded); document.getElementById('calDayTools').classList.toggle('is-open', expanded);">เพิ่มเติม · พิมพ์ / โฮมรูม ▾</button>
+        <button type="button" class="cal-more-toggle" aria-expanded="false" aria-controls="calDayTools" onclick="const expanded = this.getAttribute('aria-expanded') !== 'true'; this.setAttribute('aria-expanded', expanded); document.getElementById('calDayTools').classList.toggle('is-open', expanded);">พิมพ์รายงานเช็คชื่อ ▾</button>
         <div id="calDayTools" class="d-flex gap-2 p-2 flex-wrap align-items-center">
           <button class="nav-btn" onclick="printDailyAttendanceProfessional()" style="background:linear-gradient(135deg,#9333b8,#7e228f);color:#fff;border-color:#7e228f;font-size:0.8rem;">🖨️ พิมพ์เช็คชื่อรายวัน</button>
-          <button class="nav-btn" onclick="openHomeroomModal()" style="background:linear-gradient(135deg,#fef3c7,#fde68a);color:#92400e;border-color:#fcd34d;font-size:0.8rem;">📝 บันทึกโฮมรูม</button>
-          <button class="nav-btn" onclick="openPrintHomeroomModal()" style="background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;border-color:#d97706;font-size:0.8rem;">🗣️ พิมพ์โฮมรูม</button>
         </div>
         </div>
         <div class="cal-day-controls d-flex gap-2 p-3 border-bottom flex-wrap align-items-center">
