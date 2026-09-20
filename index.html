@@ -558,7 +558,8 @@ body::before { content:'';position:fixed;inset:0;z-index:-1;pointer-events:none;
 .audit-controls { display:flex;gap:8px;margin:8px 0 16px; }
 .audit-controls input { min-width:0;flex:1;padding:10px;border:1px solid #d8c5e2;border-radius:10px;font:inherit;font-size:16px; }
 .audit-row { display:flex;justify-content:space-between;gap:12px;align-items:center;padding:12px;margin:8px 0;border-radius:12px;background:#f8f5fa;border-left:4px solid #64748b; }
-.audit-row small { display:block;color:#64748b;margin-top:3px; }
+.audit-row strong { flex-shrink:0;align-self:flex-start; }
+.audit-row small { line-height:1.7;display:block;color:#64748b;margin-top:3px; }
 .audit-row.pending { background:#fff1f2;border-color:#dc2626;color:#991b1b; }
 .audit-row.partial { background:#fff7ed;border-color:#d97706;color:#92400e; }
 .audit-row.done { background:#f0fdf4;border-color:#16a34a;color:#166534; }
@@ -828,7 +829,7 @@ body::before { content:'';position:fixed;inset:0;z-index:-1;pointer-events:none;
         </div>
       </div>
       
-      <button class="nav-btn attendance-audit-open" onclick="openAttendanceAudit()">🔎 ตรวจชั้นที่ยังไม่เช็คชื่อ</button>
+      <button class="nav-btn attendance-audit-open" onclick="openAttendanceAudit()">🔎 ตรวจการเช็คชื่อรายวัน / รายเดือน</button>
       <details class="cal-overview-tools">
       <summary>เครื่องมือ · รายงาน · สรุปวันเรียน</summary>
       <!-- กล่องสรุปวันเรียนตรงนี้ -->
@@ -1010,14 +1011,15 @@ body::before { content:'';position:fixed;inset:0;z-index:-1;pointer-events:none;
 
 <div class="modal fade" id="attendanceAuditModal" tabindex="-1" aria-labelledby="attendanceAuditTitle" aria-hidden="true">
  <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable"><div class="modal-content">
-  <div class="modal-header"><h2 class="modal-title" id="attendanceAuditTitle">ตรวจการบันทึกเช็คชื่อ</h2><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="ปิด"></button></div>
+  <div class="modal-header"><h2 class="modal-title" id="attendanceAuditTitle">ตรวจการเช็คชื่อ</h2><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="ปิด"></button></div>
   <div class="modal-body">
-   <label for="attendanceAuditDate">วันที่ต้องการตรวจ</label>
+   <div class="cal-mode-tabs" role="group" aria-label="รูปแบบการตรวจเช็คชื่อ"><button id="auditDailyTab" aria-pressed="true" onclick="setAttendanceAuditMode('daily')">รายวัน</button><button id="auditMonthlyTab" aria-pressed="false" onclick="setAttendanceAuditMode('monthly')">รายเดือน</button></div>
+   <label id="attendanceAuditDateLabel" for="attendanceAuditDate">วันที่ต้องการตรวจ</label>
    <div class="audit-controls"><input type="date" id="attendanceAuditDate" onchange="loadAttendanceAudit()"><button class="nav-btn" onclick="loadAttendanceAudit()">ตรวจอีกครั้ง</button></div>
    <p id="attendanceAuditStatus" role="status" aria-live="polite"></p>
    <div id="attendanceAuditRows"></div>
    <details id="attendanceAuditPreview" hidden><summary>ดูภาพก่อนส่ง</summary><img id="attendanceAuditImage" alt="ภาพสรุปการบันทึกเช็คชื่อแยกตามชั้นเรียน"></details>
-   <p class="audit-help">ตรวจว่าลงสถานะนักเรียนแล้วกี่คน ไม่ใช่จำนวนผู้มาเรียน • เลือก LINE และกลุ่มปลายทางจากเมนูแชร์ หากไม่มี LINE ให้บันทึกภาพแล้วแนบในกลุ่ม</p>
+   <p class="audit-help">“เช็คชื่อแล้ว” หมายถึงลงสถานะครบทุกคน รวมขาด ลา ป่วย และสาย หากลงไม่ครบจะเป็น “ยังไม่เช็คชื่อ” • เลือก LINE และกลุ่มปลายทางจากเมนูแชร์ หากไม่มี LINE ให้บันทึกภาพแล้วแนบในกลุ่ม</p>
   </div>
   <div class="modal-footer"><button id="attendanceAuditSave" class="btn btn-outline-primary" disabled onclick="saveAttendanceAudit()">บันทึกภาพ</button><button id="attendanceAuditShare" class="btn btn-primary" disabled onclick="shareAttendanceAudit()">แชร์ภาพ / LINE</button></div>
  </div></div>
@@ -1426,6 +1428,7 @@ function renderSchoolDaysSummary() {
 }
 
 // ฟังก์ชันสร้าง UI แสดงผลในหน้า Dashboard
+let attendanceAuditMode = 'daily';
 let attendanceAuditVersion = 0;
 let attendanceAuditFile = null;
 let attendanceAuditUrl = '';
@@ -1435,7 +1438,7 @@ function auditRows(classes) {
     const total = count(d.total), recorded = count(d.p)+count(d.a)+count(d.l)+count(d.la);
     const state = total === 0 ? 'empty' : recorded === 0 ? 'pending' : recorded < total ? 'partial' : recorded === total ? 'done' : 'invalid';
     return {name:String(d.class || 'ไม่ระบุชั้น'),total,recorded,state,
-      label:{empty:'ไม่มีข้อมูลนักเรียน',pending:'ยังไม่บันทึก',partial:'บันทึกบางส่วน',done:'บันทึกครบแล้ว',invalid:'โปรดตรวจข้อมูล'}[state]};
+      label:{empty:'ไม่มีข้อมูลนักเรียน',pending:'ยังไม่เช็คชื่อ',partial:'ยังไม่เช็คชื่อ',done:'เช็คชื่อแล้ว',invalid:'โปรดตรวจข้อมูล'}[state]};
   }).sort((a,b) => ['pending','partial','invalid','done','empty'].indexOf(a.state)-['pending','partial','invalid','done','empty'].indexOf(b.state));
 }
 function clearAttendanceAuditImage() {
@@ -1448,89 +1451,168 @@ function clearAttendanceAuditImage() {
   document.getElementById('attendanceAuditShare').disabled = true;
 }
 function openAttendanceAudit() {
-  document.getElementById('attendanceAuditDate').value = dateToInput(todayStr());
+  attendanceAuditMode = 'daily';
+  configureAttendanceAuditPicker();
   bootstrap.Modal.getOrCreateInstance(document.getElementById('attendanceAuditModal')).show();
   loadAttendanceAudit();
 }
+function configureAttendanceAuditPicker() {
+  const monthly = attendanceAuditMode === 'monthly';
+  const picker = document.getElementById('attendanceAuditDate');
+  picker.type = monthly ? 'month' : 'date';
+  picker.value = monthly ? `${calYear-543}-${pad(calMonth)}` : dateToInput(todayStr());
+  document.getElementById('attendanceAuditDateLabel').textContent = monthly ? 'เดือนที่ต้องการตรวจ' : 'วันที่ต้องการตรวจ';
+  document.getElementById('auditDailyTab').setAttribute('aria-pressed',!monthly);
+  document.getElementById('auditMonthlyTab').setAttribute('aria-pressed',monthly);
+}
+function setAttendanceAuditMode(mode) {
+  if (attendanceAuditMode === mode) return;
+  attendanceAuditMode = mode;
+  configureAttendanceAuditPicker();
+  loadAttendanceAudit();
+}
+function attendanceAuditDays(month,holidays,config,today) {
+  const ranges = [[config.t1_start,config.t1_end],[config.t2_start,config.t2_end]]
+    .filter(pair=>pair[0] && pair[1]).map(pair=>pair.map(dateToInput));
+  if (!ranges.length) throw new Error('ยังไม่ได้กำหนดวันเปิด–ปิดเทอม');
+  const [y,m] = month.split('-').map(Number);
+  const limit = new Date(y,m,0).getDate();
+  const dates=[];
+  for(let day=1;day<=limit;day++) {
+    const iso = `${month}-${pad(day)}`;
+    if (iso > today || !ranges.some(([start,end])=>iso>=start && iso<=end)) continue;
+    const thai = inputToThai(iso), holiday = holidays.find(h=>h.date===thai);
+    const dow = new Date(y,m-1,day).getDay();
+    if (holiday?.type==='holiday' || ((dow===0 || dow===6) && holiday?.type!=='makeup')) continue;
+    dates.push(thai);
+  }
+  return dates;
+}
+function monthlyAttendanceAuditRow(name,report,dates) {
+  if (!Array.isArray(report?.students) || !report.attendance || typeof report.attendance !== 'object') throw new Error('ข้อมูลของ '+name+' ไม่สมบูรณ์');
+  const students = report.students, total=students.length;
+  if(!total) return {name,state:'empty',label:'ไม่มีข้อมูลนักเรียน',amount:'ไม่รวมในการสรุป',details:[]};
+  if(!dates.length) return {name,state:'empty',label:'ไม่มีวันเรียนที่ต้องตรวจ',amount:'ไม่รวมในการสรุป',details:[]};
+  const missing=[];
+  for(const date of dates) {
+    const recorded=students.filter(s=>['ม','ข','ล','ป','ส'].includes(report.attendance[s.studentId]?.[date])).length;
+    if(recorded<total) missing.push({date,recorded});
+  }
+  const done=dates.length-missing.length;
+  const dateLines=[];
+  for(let i=0;i<missing.length;i+=7) dateLines.push('วันที่ '+missing.slice(i,i+7).map(d=>Number(d.date.split('/')[0])).join(', '));
+  return {name,state:missing.length?'pending':'done',label:missing.length?'ยังไม่เช็คชื่อ':'เช็คชื่อแล้ว',
+    amount:`เช็คชื่อแล้ว ${done}/${dates.length} วัน`,
+    details:missing.length ? ['ยังไม่เช็คชื่อ '+missing.length+' วัน',...dateLines,...missing.filter(d=>d.recorded>0).map(d=>`วันที่ ${Number(d.date.split('/')[0])} ลงสถานะ ${d.recorded}/${total} คน`)] : []};
+}
 async function loadAttendanceAudit() {
-  const version = ++attendanceAuditVersion;
+  const version=++attendanceAuditVersion, mode=attendanceAuditMode;
   clearAttendanceAuditImage();
-  const output = document.getElementById('attendanceAuditStatus');
-  const list = document.getElementById('attendanceAuditRows');
+  const output=document.getElementById('attendanceAuditStatus'), list=document.getElementById('attendanceAuditRows');
   list.replaceChildren();
-  const selected = document.getElementById('attendanceAuditDate').value;
-  if (!selected) { output.textContent = 'กรุณาเลือกวันที่'; return; }
-  const date = inputToThai(selected), year = currentYear;
-  output.textContent = 'กำลังตรวจทุกชั้นเรียน…';
+  const selected=document.getElementById('attendanceAuditDate').value;
+  if(!selected) {output.textContent='กรุณาเลือก'+(mode==='monthly'?'เดือน':'วันที่');return;}
+  const monthly=mode==='monthly', date=inputToThai(monthly?selected+'-01':selected), year=currentYear;
+  const config={...sysConfig};
+  output.textContent='กำลังตรวจทุกชั้นเรียน…';
   try {
-    const [data,holidays] = await Promise.all([
+    const [data,holidays]=await Promise.all([
       api('getDashboardStats',{year,mode:'daily',date,month:selected.slice(5,7)}),
       api('getHolidays',{year})
     ]);
-    if (version !== attendanceAuditVersion) return;
-    if (!Array.isArray(data?.classes) || !data.classes.length) throw new Error('ไม่พบข้อมูลชั้นเรียน');
-    const holiday = (holidays || []).find(h => h.date === date);
-    const dow = new Date(selected+'T12:00:00').getDay();
-    const off = holiday?.type === 'holiday' || ((dow === 0 || dow === 6) && holiday?.type !== 'makeup');
-    const outside = termDates.start && termDates.end && (selected < dateToInput(termDates.start) || selected > dateToInput(termDates.end));
-    const future = selected > dateToInput(todayStr());
-    const note = off ? 'วันหยุด — แสดงข้อมูลที่มี ไม่ใช้เป็นการแจ้งเตือนค้างบันทึก' : outside ? 'อยู่นอกช่วงเทอมที่เลือก — โปรดตรวจสอบวันเรียน' : future ? 'วันที่ล่วงหน้า — ยังไม่ถึงวันบันทึก' : '';
-    const rows = auditRows(data.classes);
-    const pending = rows.filter(r => r.state === 'pending').length;
-    const partial = rows.filter(r => r.state === 'partial').length;
-    const done = rows.filter(r => r.state === 'done').length;
-    const stamp = new Date().toLocaleString('th-TH',{dateStyle:'short',timeStyle:'short'});
-    const summary = `ยังไม่บันทึก ${pending} ชั้น · บางส่วน ${partial} ชั้น · ครบแล้ว ${done} ชั้น`;
-    output.textContent = [note,summary,'ตรวจเมื่อ '+stamp].filter(Boolean).join(' • ');
-    for (const row of rows) {
-      const el = document.createElement('div'); el.className = 'audit-row '+row.state;
-      const name = document.createElement('strong'); name.textContent = row.name;
-      const info = document.createElement('div'); info.textContent = row.label;
-      const amount = document.createElement('small'); amount.textContent = `ลงสถานะ ${row.recorded}/${row.total} คน`;
-      info.append(amount); el.append(name,info); list.append(el);
+    if(version!==attendanceAuditVersion)return;
+    if(!Array.isArray(data?.classes)||!data.classes.length)throw new Error('ไม่พบข้อมูลชั้นเรียน');
+    let rows,note,period;
+    if(monthly) {
+      const dates=attendanceAuditDays(selected,holidays||[],config,dateToInput(todayStr()));
+      const names=[...new Set(data.classes.map(d=>d.class).filter(Boolean))];
+      if(!names.length)throw new Error('ไม่พบชื่อชั้นเรียน');
+      rows=new Array(names.length);
+      let next=0,finished=0;
+      // Keep requests bounded; a failed class prevents exporting an incomplete report.
+      async function worker() {
+        while(next<names.length && version===attendanceAuditVersion) {
+          const index=next++, name=names[index];
+          const report=await api('getReport',{year,classroom:name,month:selected.slice(5,7)});
+          if(version!==attendanceAuditVersion)return;
+          rows[index]=monthlyAttendanceAuditRow(name,report,dates);
+          output.textContent=`กำลังตรวจ ${++finished}/${names.length} ชั้น…`;
+        }
+      }
+      const results=await Promise.allSettled(Array.from({length:Math.min(3,names.length)},worker));
+      if(version!==attendanceAuditVersion)return;
+      const failed=results.find(result=>result.status==='rejected');
+      if(failed)throw failed.reason;
+      rows.sort((a,b)=>['pending','done','empty'].indexOf(a.state)-['pending','done','empty'].indexOf(b.state));
+      period=THAI_MONTHS_CAL[Number(selected.slice(5,7))]+' '+(Number(selected.slice(0,4))+543);
+      note=`ตรวจ ${dates.length} วันเรียนถึงวันนี้ • เว้นวันหยุด วันนอกเทอม และวันล่วงหน้า`;
+      if(!dates.length)note='เดือนนี้ไม่มีวันเรียนที่ต้องตรวจถึงวันนี้';
+    } else {
+      const holiday=(holidays||[]).find(h=>h.date===date), dow=new Date(selected+'T12:00:00').getDay();
+      const off=holiday?.type==='holiday'||((dow===0||dow===6)&&holiday?.type!=='makeup');
+      const outside=termDates.start&&termDates.end&&(selected<dateToInput(termDates.start)||selected>dateToInput(termDates.end));
+      note=off?'วันหยุด — แสดงข้อมูลที่มี ไม่ใช้เป็นการแจ้งเตือนค้างเช็คชื่อ':outside?'อยู่นอกช่วงเทอมที่เลือก — โปรดตรวจสอบวันเรียน':selected>dateToInput(todayStr())?'วันที่ล่วงหน้า — ยังไม่ถึงวันเช็คชื่อ':'';
+      rows=auditRows(data.classes).map(row=>({...row,amount:`ลงสถานะ ${row.recorded}/${row.total} คน`,details:[]}));
+      period=thaiDateFull(date);
     }
-    // Prepare the file before a share click to preserve browser user activation.
-    const blob = await makeAttendanceAuditImage(rows,date,year,summary,note,stamp);
-    if (version !== attendanceAuditVersion) return;
-    attendanceAuditFile = new File([blob],`attendance-check-${selected}.png`,{type:'image/png'});
-    attendanceAuditUrl = URL.createObjectURL(blob);
-    document.getElementById('attendanceAuditImage').src = attendanceAuditUrl;
-    document.getElementById('attendanceAuditPreview').hidden = false;
-    document.getElementById('attendanceAuditSave').disabled = false;
-    document.getElementById('attendanceAuditShare').disabled = false;
+    const pending=rows.filter(r=>['pending','partial'].includes(r.state)).length, done=rows.filter(r=>r.state==='done').length;
+    const stamp=new Date().toLocaleString('th-TH',{dateStyle:'short',timeStyle:'short'});
+    const summary=`ยังไม่เช็คชื่อ ${pending} ชั้น · เช็คชื่อแล้ว ${done} ชั้น`;
+    output.textContent=[period,note,summary,'ตรวจเมื่อ '+stamp].filter(Boolean).join(' • ');
+    for(const row of rows) {
+      const el=document.createElement('div');el.className='audit-row '+row.state;
+      const name=document.createElement('strong');name.textContent=row.name;
+      const info=document.createElement('div');info.textContent=row.label;
+      for(const text of [row.amount,...row.details]) {const line=document.createElement('small');line.textContent=text;info.append(line);}
+      el.append(name,info);list.append(el);
+    }
+    const blob=await makeAttendanceAuditImage(rows,period,year,summary,note,stamp,monthly);
+    if(version!==attendanceAuditVersion)return;
+    attendanceAuditFile=new File([blob],`attendance-check-${selected}.png`,{type:'image/png'});
+    attendanceAuditUrl=URL.createObjectURL(blob);
+    document.getElementById('attendanceAuditImage').src=attendanceAuditUrl;
+    document.getElementById('attendanceAuditPreview').hidden=false;
+    document.getElementById('attendanceAuditSave').disabled=false;
+    document.getElementById('attendanceAuditShare').disabled=false;
   } catch(e) {
-    if (version !== attendanceAuditVersion) return;
-    output.textContent = 'ตรวจไม่สำเร็จ: '+e.message+' กรุณากดตรวจอีกครั้ง';
+    if(version!==attendanceAuditVersion)return;
+    output.textContent='ตรวจไม่สำเร็จ: '+e.message+' กรุณากดตรวจอีกครั้ง';
   }
 }
-async function makeAttendanceAuditImage(rows,date,year,summary,note,stamp) {
+async function makeAttendanceAuditImage(rows,period,year,summary,note,stamp,monthly) {
   await document.fonts.ready;
-  const canvas = document.createElement('canvas');
-  canvas.width = 900; canvas.height = 360 + (note ? 70 : 0) + rows.length*78;
-  const ctx = canvas.getContext('2d');
+  const canvas=document.createElement('canvas');
+  // Two columns keep a full month's missing dates legible without an excessively tall image.
+  const heights=rows.map(row=>monthly?116+Math.ceil(row.details.length/2)*34:78);
+  canvas.width=900;canvas.height=360+(note?70:0)+heights.reduce((a,b)=>a+b,0);
+  const ctx=canvas.getContext('2d');
   ctx.fillStyle='#fff';ctx.fillRect(0,0,canvas.width,canvas.height);
   ctx.fillStyle='#702179';ctx.fillRect(0,0,900,170);
-  const draw = (text,x,y,size=26,color='#334155',weight=400,max=820) => {
+  const draw=(text,x,y,size=26,color='#334155',weight=400,max=820)=>{
     ctx.font=weight+' '+size+'px "Prompt", sans-serif';ctx.fillStyle=color;ctx.fillText(text,x,y,max);
   };
-  draw(sysConfig.school_name || 'โรงเรียนบ้านคลอง 14',40,52,30,'#fff',700);
-  draw('สรุปการบันทึกเช็คชื่อ',40,100,34,'#fff',700);
-  draw(thaiDateFull(date)+' • ปีการศึกษา '+year,40,142,24,'#fff');
+  draw(sysConfig.school_name||'โรงเรียนบ้านคลอง 14',40,52,30,'#fff',700);
+  draw('สรุปการเช็คชื่อ'+(monthly?'รายเดือน':'รายวัน'),40,100,34,'#fff',700);
+  draw(period+' • ปีการศึกษา '+year,40,142,24,'#fff');
   draw(summary,40,215,26,'#702179',700);
   let y=240;
-  if(note) { draw(note,40,y+32,23,'#92400e');y+=70; }
-  for(const row of rows) {
+  if(note){draw(note,40,y+32,23,'#92400e');y+=70;}
+  rows.forEach((row,index)=>{
     const colors={pending:['#fff1f2','#991b1b'],partial:['#fff7ed','#92400e'],done:['#f0fdf4','#166534'],empty:['#f1f5f9','#64748b'],invalid:['#fff7ed','#92400e']}[row.state];
-    ctx.fillStyle=colors[0];ctx.fillRect(30,y,840,68);
-    draw(row.name,50,y+43,28,colors[1],700,180);
-    draw(row.label,235,y+43,26,colors[1],500,325);
-    draw(row.recorded+'/'+row.total+' คน',610,y+43,26,colors[1],500,235);
-    y+=78;
-  }
-  draw('จำนวน = นักเรียนที่ลงสถานะแล้ว / นักเรียนทั้งหมด',40,y+38,24);
-  draw('ข้อมูล ณ '+stamp+' • กรุณาตรวจสอบอีกครั้งหลังบันทึก',40,y+80,22,'#64748b');
-  return new Promise((resolve,reject)=>canvas.toBlob(blob=>blob ? resolve(blob) : reject(new Error('สร้างภาพไม่สำเร็จ')),'image/png'));
+    ctx.fillStyle=colors[0];ctx.fillRect(30,y,840,heights[index]-10);
+    draw(row.name,50,y+43,28,colors[1],700,160);
+    draw(row.label,230,y+43,26,colors[1],500,330);
+    if(monthly){
+      draw(row.amount,50,y+82,23,colors[1]);
+      row.details.forEach((text,i)=>draw(text,50+(i%2)*410,y+116+Math.floor(i/2)*34,21,colors[1],400,390));
+    }else draw(row.recorded+'/'+row.total+' คน',610,y+43,26,colors[1],500,235);
+    y+=heights[index];
+  });
+  draw('เช็คชื่อแล้ว = ลงสถานะครบทุกคน รวมขาด ลา ป่วย และสาย',40,y+38,23);
+  draw('ข้อมูล ณ '+stamp+' • อ้างอิงรายชื่อนักเรียนในระบบขณะตรวจ',40,y+80,22,'#64748b');
+  return new Promise((resolve,reject)=>canvas.toBlob(blob=>blob?resolve(blob):reject(new Error('สร้างภาพไม่สำเร็จ')),'image/png'));
 }
+
 function saveAttendanceAudit() {
   if (!attendanceAuditFile || !attendanceAuditUrl) return;
   const link=document.createElement('a');link.href=attendanceAuditUrl;link.download=attendanceAuditFile.name;
