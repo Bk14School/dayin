@@ -2749,6 +2749,11 @@ function printCalStudent() {
   const checkedCount = present + absent + leave + sick + late;
   const attendancePct = calStudents.length ? Math.round((present / calStudents.length) * 100) : 0;
   const summaryText = unchecked > 0 ? `เช็คชื่อแล้ว ${checkedCount}/${calStudents.length} คน` : `เช็คชื่อครบ ${calStudents.length}/${calStudents.length} คน`;
+  const statusSummary = [
+    ['มาเรียน', present, '#166534'], ['ขาด', absent, '#991b1b'],
+    ['ลา', leave, '#92400e'], ['ป่วย', sick, '#be185d'], ['สาย', late, '#3730a3']
+  ].map(([label, count, color]) => `<span style="color:${color};white-space:nowrap;">${label} ${count} คน</span>`).join('');
+  const pendingSummary = unchecked > 0 ? `<span style="color:#475569;white-space:nowrap;">ยังไม่เช็ค ${unchecked} คน</span>` : '';
   const safeDate = targetDate.replace(/\//g, '-');
   const fileName = `รายงานเช็คชื่อ_${cls}_${safeDate}.png`;
 
@@ -2773,7 +2778,7 @@ function printCalStudent() {
   <div class="page" id="reportCapture">
     <div class="header"><div><h2 style="margin:0;color:#9333b8;">${school}</h2><div style="font-size:13px;color:#475569;">รายงานสรุปการเช็คชื่อนักเรียนประจำวัน</div></div><div style="text-align:right;font-size:13px;">วันที่พิมพ์ ${printDate}<br>ปีการศึกษา ${term}</div></div>
     <div class="doc-title">รายงานการมาเรียนประจำวัน<br><span style="font-size:14px;font-weight:normal;">${thaiDateFull(targetDate)}</span></div>
-    <div class="meta-wrap"><div class="meta-item"><b>ชั้นเรียน:</b> ${cls}</div><div class="meta-item"><b>ครูผู้บันทึก:</b> ${teacher}</div><div class="meta-item"><b>สถานะรวม:</b> ${summaryText}</div><div class="meta-item"><b>มาเรียนวันนี้:</b> ${attendancePct}%</div></div>
+    <div class="meta-wrap"><div class="meta-item"><b>ชั้นเรียน:</b> ${cls}</div><div class="meta-item"><b>ครูผู้บันทึก:</b> ${teacher}</div><div class="meta-item"><b>สถานะรวม:</b> ${summaryText}<div style="display:flex;flex-wrap:wrap;gap:4px 12px;margin-top:6px;font-size:13px;line-height:1.6;">${statusSummary}${pendingSummary}</div></div><div class="meta-item"><b>มาเรียนวันนี้:</b> ${attendancePct}%</div></div>
     <table><thead><tr><th style="width:50px;">ลำดับ</th><th style="width:110px;">รหัส</th><th>ชื่อ-นามสกุล</th><th style="width:90px;">ชั้น</th><th style="width:70px;">รหัส</th><th style="width:130px;">สถานะ</th></tr></thead><tbody>${rows}</tbody></table>
   </div>
   <div class="print-actions"><button class="btn btn-print" onclick="window.print()">🖨️ พิมพ์รายงาน</button><button class="btn btn-save" id="btnSavePng" onclick="saveReportAsPNG()">🖼️ เซฟเป็น PNG</button><button class="btn btn-close" onclick="window.close()">ปิดหน้าต่าง</button></div>
