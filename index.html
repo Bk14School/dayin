@@ -1666,7 +1666,7 @@ async function shareAttendanceAudit() {
     if (!navigator.share || !navigator.canShare?.({files:[attendanceAuditFile]})) {
       showToast('เครื่องนี้แชร์ภาพโดยตรงไม่ได้ กรุณากดบันทึกภาพแล้วแนบใน LINE');return;
     }
-    await navigator.share({files:[attendanceAuditFile],title:'สรุปการบันทึกเช็คชื่อ'});
+    await navigator.share({files:[attendanceAuditFile],title:'สรุปการบันทึกเช็คชื่อ',text:'เปิดระบบเช็คชื่อนักเรียน โรงเรียนบ้านคลอง 14: https://bk14school.github.io/dayin/'});
   } catch(e) {
     if(e.name !== 'AbortError') showToast('แชร์ภาพไม่ได้ กรุณาบันทึกภาพแล้วแนบใน LINE','error');
   }
@@ -3143,7 +3143,7 @@ function printCalStudent() {
           help.textContent = 'เครื่องนี้แชร์ภาพโดยตรงไม่ได้ กรุณากดเซฟเป็น PNG แล้วแนบภาพใน LINE'; return;
         }
         button.disabled = true;
-        await navigator.share({files:[reportImageFile], title:'รายงานการเช็คชื่อประจำวัน'});
+        await navigator.share({files:[reportImageFile], title:'รายงานการเช็คชื่อประจำวัน',text:'เปิดระบบเช็คชื่อนักเรียน โรงเรียนบ้านคลอง 14: https://bk14school.github.io/dayin/'});
       } catch(e) {
         if (e.name !== 'AbortError') help.textContent = 'แชร์ภาพไม่ได้ กรุณากดเซฟเป็น PNG แล้วแนบใน LINE';
       } finally { button.disabled = false; }
