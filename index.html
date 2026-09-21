@@ -563,6 +563,8 @@ body::before { content:'';position:fixed;inset:0;z-index:-1;pointer-events:none;
 .audit-row.pending { background:#fff1f2;border-color:#dc2626;color:#991b1b; }
 .audit-row.partial { background:#fff7ed;border-color:#d97706;color:#92400e; }
 .audit-row.done { background:#f0fdf4;border-color:#16a34a;color:#166534; }
+.audit-line-link { flex-basis:100% !important;background:#07883e;color:#fff;min-height:44px;align-content:center; }
+.audit-line-link:hover,.audit-line-link:focus { background:#066d33;color:#fff; }
 .audit-help { font-size:13px;line-height:1.6;color:#64748b;margin-top:16px; }
 #attendanceAuditImage { display:block;width:100%;height:auto;margin-top:10px; }
 #attendanceAuditStatus { font-size:15px;line-height:1.6; }
@@ -1061,9 +1063,9 @@ body::before { content:'';position:fixed;inset:0;z-index:-1;pointer-events:none;
    <p id="attendanceAuditStatus" role="status" aria-live="polite"></p>
    <div id="attendanceAuditRows"></div>
    <details id="attendanceAuditPreview" hidden><summary>ดูภาพก่อนส่ง</summary><img id="attendanceAuditImage" alt="ภาพสรุปการบันทึกเช็คชื่อแยกตามชั้นเรียน"></details>
-   <p class="audit-help">“เช็คชื่อแล้ว” หมายถึงลงสถานะครบทุกคน รวมขาด ลา ป่วย และสาย หากลงไม่ครบจะเป็น “ยังไม่เช็คชื่อ” • เลือก LINE และกลุ่มปลายทางจากเมนูแชร์ หากไม่มี LINE ให้บันทึกภาพแล้วแนบในกลุ่ม</p>
+   <p class="audit-help">“เช็คชื่อแล้ว” หมายถึงลงสถานะครบทุกคน รวมขาด ลา ป่วย และสาย หากลงไม่ครบจะเป็น “ยังไม่เช็คชื่อ” • แชร์ภาพแล้วกด “ส่งลิงก์ทาง LINE” เพื่อส่งลิงก์เข้ากลุ่มเดียวกัน หากเมนูแชร์ภาพไม่ได้แนบข้อความไปด้วย</p>
   </div>
-  <div class="modal-footer"><button id="attendanceAuditSave" class="btn btn-outline-primary" disabled onclick="saveAttendanceAudit()">บันทึกภาพ</button><button id="attendanceAuditShare" class="btn btn-primary" disabled onclick="shareAttendanceAudit()">แชร์ภาพ / LINE</button></div>
+  <div class="modal-footer"><button id="attendanceAuditSave" class="btn btn-outline-primary" disabled onclick="saveAttendanceAudit()">บันทึกภาพ</button><button id="attendanceAuditShare" class="btn btn-primary" disabled onclick="shareAttendanceAudit()">แชร์ภาพ / LINE</button><a class="btn audit-line-link" href="https://line.me/R/share?text=%E0%B8%A3%E0%B8%B0%E0%B8%9A%E0%B8%9A%E0%B9%80%E0%B8%8A%E0%B9%87%E0%B8%84%E0%B8%8A%E0%B8%B7%E0%B9%88%E0%B8%AD%E0%B8%99%E0%B8%B1%E0%B8%81%E0%B9%80%E0%B8%A3%E0%B8%B5%E0%B8%A2%E0%B8%99%20%E0%B9%82%E0%B8%A3%E0%B8%87%E0%B9%80%E0%B8%A3%E0%B8%B5%E0%B8%A2%E0%B8%99%E0%B8%9A%E0%B9%89%E0%B8%B2%E0%B8%99%E0%B8%84%E0%B8%A5%E0%B8%AD%E0%B8%87%2014%0Ahttps%3A%2F%2Fbk14school.github.io%2Fdayin%2F" target="_blank" rel="noopener noreferrer">ส่งลิงก์ทาง LINE</a></div>
  </div></div>
 </div>
 
